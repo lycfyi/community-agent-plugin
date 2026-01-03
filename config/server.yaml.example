@@ -1,0 +1,21 @@
+# Discord Server Configuration
+# Copy to server.yaml and fill in your values
+
+# Required: Your Discord server ID
+# How to find: Enable Developer Mode in Discord settings,
+# right-click server name → Copy Server ID
+server_id: "YOUR_SERVER_ID_HERE"
+
+# Optional: Only sync these channel IDs (omit for all channels)
+# channel_filter:
+#   - "111111111111111111"
+#   - "222222222222222222"
+
+# Message history depth in days (1-365)
+retention_days: 30
+
+# Storage directory for synced messages
+data_dir: "./data"
+
+# Optional: Automated sync schedule (cron format)
+# sync_schedule: "0 */6 * * *"  # Every 6 hours
