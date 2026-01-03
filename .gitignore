@@ -1,0 +1,8 @@
+# User secrets & runtime data
+.env
+config/server.yaml
+data/
+
+# OS
+.DS_Store
+Thumbs.db
