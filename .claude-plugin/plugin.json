@@ -1,0 +1,13 @@
+{
+  "name": "discord",
+  "version": "1.0.0",
+  "description": "Sync, read, and analyze Discord messages with Claude Code",
+  "author": {
+    "name": "lycfyi",
+    "url": "https://github.com/lycfyi"
+  },
+  "repository": "https://github.com/lycfyi/community-agent-plugin",
+  "license": "MIT",
+  "keywords": ["discord", "community", "sync", "messages", "analysis"],
+  "skills": "./skills/"
+}

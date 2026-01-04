@@ -21,31 +21,31 @@ Syncs messages from Discord servers to local Markdown files for reading and anal
 ### Sync all channels in configured server:
 
 ```bash
-python tools/discord_sync.py
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py
 ```
 
 ### Sync specific channel:
 
 ```bash
-python tools/discord_sync.py --channel CHANNEL_ID
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --channel CHANNEL_ID
 ```
 
 ### Sync specific server:
 
 ```bash
-python tools/discord_sync.py --server SERVER_ID
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --server SERVER_ID
 ```
 
 ### Sync with custom history range:
 
 ```bash
-python tools/discord_sync.py --days 7
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --days 7
 ```
 
 ### Full re-sync (ignore previous sync state):
 
 ```bash
-python tools/discord_sync.py --full
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --full
 ```
 
 ## Output Location

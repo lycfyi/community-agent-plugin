@@ -20,13 +20,13 @@ Send messages to Discord channels using your user token.
 ### Send a message to a channel:
 
 ```bash
-python tools/discord_send.py --channel CHANNEL_ID --message "Your message here"
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_send.py --channel CHANNEL_ID --message "Your message here"
 ```
 
 ### Reply to a specific message:
 
 ```bash
-python tools/discord_send.py --channel CHANNEL_ID --message "Your reply" --reply-to MESSAGE_ID
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_send.py --channel CHANNEL_ID --message "Your reply" --reply-to MESSAGE_ID
 ```
 
 ## Parameters
@@ -41,7 +41,7 @@ python tools/discord_send.py --channel CHANNEL_ID --message "Your reply" --reply
 
 Use discord-list skill to find channel IDs:
 ```bash
-python tools/discord_list.py --channels SERVER_ID
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_list.py --channels SERVER_ID
 ```
 
 ## Finding Message IDs

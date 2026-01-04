@@ -1,16 +1,24 @@
-# Discord Sync for Claude Code
+# Discord Plugin for Claude Code
 
-Let Claude Code read, analyze, and interact with your Discord communities.
+Sync, read, and analyze Discord messages directly from Claude Code.
 
-## What This Does
+## Install
 
-Connect Claude Code to your Discord account so you can:
+```bash
+claude plugin add https://github.com/lycfyi/community-agent-plugin
+claude plugin install discord
+```
 
-- **"What servers am I in?"** - Browse your Discord servers and channels
-- **"Sync messages from #general"** - Pull Discord history to local storage
-- **"What's been discussed this week?"** - Analyze conversations with AI
-- **"Summarize the key topics in #announcements"** - Get insights from any channel
-- **"Reply to that message"** - Send messages back to Discord
+## Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `/discord:init` | Initialize configuration from your Discord account |
+| `/discord:list` | List accessible servers and channels |
+| `/discord:sync` | Sync messages to local Markdown storage |
+| `/discord:read` | Read and search synced messages |
+| `/discord:send` | Send messages to Discord channels |
+| `/discord:chat-summary` | AI-powered summary of Discord conversations |
 
 ## Setup
 
@@ -23,28 +31,66 @@ Connect Claude Code to your Discord account so you can:
 5. Find any request to `discord.com/api`
 6. Copy the `Authorization` header value
 
-### 2. Configure
+### 2. Configure Your Project
 
-Create a `.env` file:
+Create a `.env` file in your project:
+
 ```
 DISCORD_USER_TOKEN=your_token_here
 ```
 
-### 3. Use with Claude Code
-
-Just open Claude Code and ask naturally:
+### 3. Initialize
 
 ```
-> What Discord servers do I have?
-> List channels in Midjourney
-> Sync the last 3 days from #discussion
-> What are people talking about?
-> Search for "API" in my Discord messages
+/discord:init
 ```
+
+Or ask Claude naturally: "Set up Discord for this project"
+
+## Usage
+
+### Natural Language
+
+Just talk to Claude:
+
+- "What Discord servers do I have?"
+- "Sync messages from #general"
+- "What's been discussed in the last 3 days?"
+- "Search for 'project update' in my Discord"
+- "Summarize the key topics in #announcements"
+
+### Commands
+
+```
+/discord:list              # See your servers
+/discord:sync              # Pull latest messages
+/discord:read              # View synced messages
+/discord:chat-summary      # Get AI summary
+```
+
+## Data Storage
+
+Messages sync to your project directory:
+
+```
+your-project/
+├── .env                           # Your Discord token
+├── config/server.yaml             # Server configuration
+└── data/
+    ├── manifest.yaml              # Index of all synced data
+    └── {server-id}/
+        ├── server.yaml            # Server metadata
+        └── {channel}/
+            ├── messages.md        # Message archive
+            └── channel.yaml       # Channel metadata
+```
+
+Messages are stored in LLM-optimized Markdown format for easy analysis.
 
 ## Example Workflows
 
 ### Community Monitoring
+
 ```
 > Sync messages from my top 3 servers for the last week
 > Summarize the main topics and sentiment
@@ -52,6 +98,7 @@ Just open Claude Code and ask naturally:
 ```
 
 ### Research & Analysis
+
 ```
 > What's the community saying about [topic]?
 > Find all discussions about pricing changes
@@ -59,24 +106,24 @@ Just open Claude Code and ask naturally:
 ```
 
 ### Catch Up Quickly
+
 ```
-> I've been away for a week, summarize what I missed in #general
+> I've been away for a week, summarize what I missed
 > Any announcements I should know about?
 ```
 
-## How It Works
+## Requirements
 
-Messages are synced to local Markdown files that Claude Code can read and analyze:
+- Python 3.11+
+- Dependencies (installed automatically):
+  - discord.py-self
+  - pyyaml
+  - python-dotenv
+  - aiohttp
 
-```
-data/{server_id}/{channel_name}/messages.md
-```
+## Warning
 
-The format is optimized for LLM comprehension with timestamps, authors, replies, and reactions preserved.
-
-## Important Warning
-
-Using a user token may violate Discord's Terms of Service. This tool is for:
+Using a user token (self-bot) may violate Discord's Terms of Service. This tool is intended for:
 - Personal archival and backup
 - Private AI-assisted analysis
 - Your own account only

@@ -20,13 +20,13 @@ Automatically configure the Discord server from your account.
 ### Auto-detect and save server:
 
 ```bash
-python tools/discord_init.py
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_init.py
 ```
 
 ### Select a specific server:
 
 ```bash
-python tools/discord_init.py --server SERVER_ID
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_init.py --server SERVER_ID
 ```
 
 ## What It Does

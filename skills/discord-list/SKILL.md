@@ -20,13 +20,13 @@ Lists Discord servers and channels accessible with your user token.
 ### List all servers:
 
 ```bash
-python tools/discord_list.py --servers
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_list.py --servers
 ```
 
 ### List channels in a specific server:
 
 ```bash
-python tools/discord_list.py --channels SERVER_ID
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_list.py --channels SERVER_ID
 ```
 
 Replace `SERVER_ID` with the actual Discord server ID.

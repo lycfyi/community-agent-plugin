@@ -20,31 +20,31 @@ Read locally synced Discord messages and search for specific content.
 ### Read all messages from a channel:
 
 ```bash
-python tools/discord_read.py --channel CHANNEL_NAME
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_read.py --channel CHANNEL_NAME
 ```
 
 ### Read last N messages:
 
 ```bash
-python tools/discord_read.py --channel general --last 20
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_read.py --channel general --last 20
 ```
 
 ### Search for keyword:
 
 ```bash
-python tools/discord_read.py --channel general --search "project update"
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_read.py --channel general --search "project update"
 ```
 
 ### Filter by date range:
 
 ```bash
-python tools/discord_read.py --channel general --from 2026-01-01 --to 2026-01-03
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_read.py --channel general --from 2026-01-01 --to 2026-01-03
 ```
 
 ### Read from specific server:
 
 ```bash
-python tools/discord_read.py --channel general --server SERVER_ID
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_read.py --channel general --server SERVER_ID
 ```
 
 ## Alternative: Direct File Read

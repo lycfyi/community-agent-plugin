@@ -3,6 +3,7 @@
 config/server.yaml
 data/
 .specstory/
+.claude/settings.local.json
 
 # Python
 __pycache__/
