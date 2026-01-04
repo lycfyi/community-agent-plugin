@@ -1,51 +1,74 @@
 ---
 name: discord-read
-description: "Read and analyze stored Discord messages. Use for: (1) View channel messages (2) Search content (3) Analyze discussions. Triggers: discord read, read discord, analyze discord"
+description: "Read and search synced Discord messages. Use when user asks about discord conversations, wants to see messages, or search for specific content."
 ---
 
-# Discord Read - Message Analysis
+# Discord Read
 
-Read locally stored Discord messages for analysis.
+Read locally synced Discord messages and search for specific content.
 
-## Data Location
+## When to Use
 
+- User asks "what's in #channel"
+- User asks about recent Discord conversations
+- User wants to search Discord messages
+- User asks "show me messages from Discord"
+- User wants to find specific Discord discussion
+
+## How to Execute
+
+### Read all messages from a channel:
+
+```bash
+python tools/discord_read.py --channel CHANNEL_NAME
 ```
-/Users/velocity1/codebase/claudecode-for-discord/data/1455977506891890753/
+
+### Read last N messages:
+
+```bash
+python tools/discord_read.py --channel general --last 20
 ```
 
-## Usage
+### Search for keyword:
 
-### Read Channel Messages
+```bash
+python tools/discord_read.py --channel general --search "project update"
+```
 
-Use Read tool on:
-- `data/1455977506891890753/general/messages.md`
-- `data/1455977506891890753/test-dubbing/messages.md`
+### Filter by date range:
 
-### Search Messages
+```bash
+python tools/discord_read.py --channel general --from 2026-01-01 --to 2026-01-03
+```
 
-Use Grep tool:
-- Pattern: `keyword` or `@username`
-- Path: `data/`
+### Read from specific server:
 
-### Check Sync State
+```bash
+python tools/discord_read.py --channel general --server SERVER_ID
+```
 
-Read `data/1455977506891890753/sync_state.json` to see:
-- Message counts per channel
-- Last sync time
-- Whether re-sync is needed
+## Alternative: Direct File Read
 
-## Workflow
+For simpler access, read the markdown file directly:
 
-1. Check `sync_state.json` for data freshness
-2. If stale (>1 hour), suggest `/discord-pull`
-3. Read relevant channel `messages.md`
-4. Use Grep for keyword search
-5. Summarize findings
+```bash
+cat data/{server_id}/{channel_name}/messages.md
+```
 
-## Available Channels
+## Output Format
 
-- general
-- test-dubbing
-- test-xbc
-- test-dubbing-admin
-- e2e-test-pressure_test_v2
+Messages are formatted in Markdown with:
+- Date headers (## YYYY-MM-DD)
+- Message headers (### Time - @author)
+- Reply indicators (↳ replying to @user)
+- Attachments and embeds
+- Reactions
+
+## Prerequisites
+
+- Messages must be synced first using discord-sync skill
+- Channel name must match synced channel (case-insensitive)
+
+## Error Handling
+
+If messages are not found, the tool suggests running sync first.

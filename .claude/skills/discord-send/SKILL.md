@@ -1,46 +1,70 @@
 ---
 name: discord-send
-description: "Send messages to Discord channels. Use for: (1) Post new messages (2) Reply to messages (3) Send to threads. Triggers: discord send, post to discord, send message"
+description: "Send messages to Discord channels. Use when user wants to post, reply, or send messages to Discord."
 ---
 
-# Discord Send - Post Messages
+# Discord Send
 
-Send messages to Discord channels.
+Send messages to Discord channels using your user token.
 
-## Usage
+## When to Use
 
-Run from project directory `/Users/velocity1/codebase/claudecode-for-discord`:
+- User asks to "send to Discord"
+- User asks to "post in #channel"
+- User asks to "reply to Discord message"
+- User wants to "respond to that Discord conversation"
+- User wants to post a message they composed
 
-### Send to Channel
+## How to Execute
 
-```bash
-python -m src.cli.main send --channel CHANNEL_ID --message "content" --no-confirm
-```
-
-### Reply to Message
-
-```bash
-python -m src.cli.main send --channel CHANNEL_ID --reply-to MESSAGE_ID --message "reply" --no-confirm
-```
-
-### Send to Thread
+### Send a message to a channel:
 
 ```bash
-python -m src.cli.main send --thread THREAD_ID --message "thread reply" --no-confirm
+python tools/discord_send.py --channel CHANNEL_ID --message "Your message here"
 ```
 
-## Available Channels
+### Reply to a specific message:
 
 ```bash
-python -m src.cli.main list-channels --json
+python tools/discord_send.py --channel CHANNEL_ID --message "Your reply" --reply-to MESSAGE_ID
 ```
 
-Current channels:
-- `1455977507466641520` - general
-- `1455990342422761596` - test-dubbing
-- `1455990394843168859` - test-xbc
-- `1456836441761120270` - e2e-test-pressure_test_v2
+## Parameters
 
-## Notes
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| --channel | Yes | Target channel ID |
+| --message | Yes | Message content (max 2000 chars) |
+| --reply-to | No | Message ID to reply to |
 
-- Use `--no-confirm` to skip confirmation prompt
+## Finding Channel IDs
+
+Use discord-list skill to find channel IDs:
+```bash
+python tools/discord_list.py --channels SERVER_ID
+```
+
+## Finding Message IDs
+
+Message IDs can be found in:
+1. The messages.md files (in message headers)
+2. Discord's Developer Mode (right-click → Copy ID)
+3. The sync_state.yaml (last_message_id)
+
+## Output
+
+On success, returns:
+- Message ID
+- Channel ID
+- Timestamp
+- Reply target (if applicable)
+
+## Limitations
+
+- Maximum message length: 2000 characters
+- Rate limited (automatic backoff)
+- Requires valid user token in .env
+
+## Warning
+
+Using a user token to send messages may violate Discord's Terms of Service. Use responsibly and at your own risk.
