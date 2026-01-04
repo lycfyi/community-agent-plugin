@@ -1,0 +1,78 @@
+# Discord Sync Configuration
+# Copy to server.yaml and fill in your values
+
+# =============================================================================
+# SERVER SETTINGS (auto-configured by: python tools/discord_init.py)
+# =============================================================================
+
+# Message history depth in days (1-365)
+retention_days: 30
+
+# Storage directory for synced messages
+data_dir: "./data"
+
+# =============================================================================
+# SYNC LIMITS - Control how much data is pulled per sync
+# =============================================================================
+
+sync_limits:
+  # Maximum messages to sync per channel (default: 200)
+  # Set to 0 for unlimited (not recommended for large servers)
+  max_messages_per_channel: 200
+
+  # Maximum channels to sync per server (default: 5)
+  # Channels are selected by priority_channels first, then by position
+  max_channels_per_server: 5
+
+  # Priority channels to always sync first (by name, case-insensitive)
+  # These channels are synced even if not in top positions
+  priority_channels:
+    - general
+    - announcements
+    - introductions
+
+# =============================================================================
+# USER PROFILE - Personalize your Discord analysis
+# =============================================================================
+
+profile:
+  # About you
+  name: ""        # Your name/alias
+  role: ""        # e.g., "developer", "community manager", "founder"
+
+  # Topics you care about - prioritized in summaries
+  interests:
+    - AI and machine learning
+    - Product development
+    # Add more...
+
+  # Keywords to highlight when reading messages
+  watch_keywords:
+    - bug
+    - feature request
+    - feedback
+    # Add more...
+
+  # Summarization style: "brief", "detailed", "actionable"
+  summary_style: "actionable"
+
+  # Time zone for display (e.g., "America/Los_Angeles", "Asia/Shanghai")
+  timezone: "UTC"
+
+  # Filter out spam/noise patterns
+  filter_spam: true
+
+# =============================================================================
+# PRIORITY SERVERS - Servers you want to focus on
+# =============================================================================
+
+# priority_servers:
+#   - id: "662267976984297473"
+#     name: "Midjourney"
+#     focus_channels:
+#       - "announcements"
+#       - "discussion"
+#   - id: "1046979304547954728"
+#     name: "LimeWire"
+#     focus_channels:
+#       - "general"

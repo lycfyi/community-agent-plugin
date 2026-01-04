@@ -1,0 +1,25 @@
+{
+  "name": "community-agent-marketplace",
+  "owner": {
+    "name": "lycfyi",
+    "url": "https://github.com/lycfyi"
+  },
+  "metadata": {
+    "description": "Community agent plugins for Claude Code",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "discord-agent",
+      "description": "Sync, read, and analyze Discord messages with Claude Code. Includes skills for message syncing, channel browsing, and chat summarization.",
+      "version": "0.1.0",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/community-agent-plugin",
+      "tags": ["discord", "community", "sync", "messages", "analysis"],
+      "source": "./plugins/discord-agent"
+    }
+  ]
+}
