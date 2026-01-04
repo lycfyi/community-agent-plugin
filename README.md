@@ -1,145 +1,88 @@
-# Discord User Sync for Claude Code
+# Discord Sync for Claude Code
 
-Sync and analyze Discord messages using your personal user token. This tool enables Claude Code to read, search, and respond to Discord conversations.
+Let Claude Code read, analyze, and interact with your Discord communities.
 
-## ⚠️ Important Warning
+## What This Does
 
-**Using a user token (self-bot) may violate Discord's Terms of Service.** This tool is intended for:
+Connect Claude Code to your Discord account so you can:
+
+- **"What servers am I in?"** - Browse your Discord servers and channels
+- **"Sync messages from #general"** - Pull Discord history to local storage
+- **"What's been discussed this week?"** - Analyze conversations with AI
+- **"Summarize the key topics in #announcements"** - Get insights from any channel
+- **"Reply to that message"** - Send messages back to Discord
+
+## Setup
+
+### 1. Get Your Discord Token
+
+1. Open Discord in your browser (discord.com)
+2. Press `F12` to open Developer Tools
+3. Go to **Network** tab
+4. Click anywhere in Discord
+5. Find any request to `discord.com/api`
+6. Copy the `Authorization` header value
+
+### 2. Configure
+
+Create a `.env` file:
+```
+DISCORD_USER_TOKEN=your_token_here
+```
+
+### 3. Use with Claude Code
+
+Just open Claude Code and ask naturally:
+
+```
+> What Discord servers do I have?
+> List channels in Midjourney
+> Sync the last 3 days from #discussion
+> What are people talking about?
+> Search for "API" in my Discord messages
+```
+
+## Example Workflows
+
+### Community Monitoring
+```
+> Sync messages from my top 3 servers for the last week
+> Summarize the main topics and sentiment
+> Are there any questions I should respond to?
+```
+
+### Research & Analysis
+```
+> What's the community saying about [topic]?
+> Find all discussions about pricing changes
+> Show me messages mentioning bugs or issues
+```
+
+### Catch Up Quickly
+```
+> I've been away for a week, summarize what I missed in #general
+> Any announcements I should know about?
+```
+
+## How It Works
+
+Messages are synced to local Markdown files that Claude Code can read and analyze:
+
+```
+data/{server_id}/{channel_name}/messages.md
+```
+
+The format is optimized for LLM comprehension with timestamps, authors, replies, and reactions preserved.
+
+## Important Warning
+
+Using a user token may violate Discord's Terms of Service. This tool is for:
 - Personal archival and backup
-- Message analysis with AI assistance
-- Private use on your own account
+- Private AI-assisted analysis
+- Your own account only
 
-Use at your own risk. Discord may suspend accounts that use user tokens for automation.
-
-## Features
-
-- **List servers and channels** accessible with your token
-- **Sync messages** from Discord to local Markdown files
-- **Read and search** synced messages locally
-- **Send messages** back to Discord channels
-- **LLM-friendly format** optimized for Claude Code analysis
-
-## Quick Start
-
-### 1. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Get Your Discord Token
-
-1. Open Discord in your web browser (discord.com)
-2. Press F12 to open Developer Tools
-3. Go to the Network tab
-4. Perform any action in Discord (send message, switch channels)
-5. Find any API request to `discord.com/api`
-6. In Headers, copy the `Authorization` value
-
-### 3. Configure
-
-```bash
-# Create .env with your token
-echo 'DISCORD_USER_TOKEN=your_token_here' > .env
-
-# Edit config/server.yaml with your server ID
-# (use discord-list to find server IDs)
-```
-
-### 4. Use with Claude Code
-
-Open Claude Code in this workspace:
-
-```bash
-cd workspace/claudecode-for-discord
-claude
-```
-
-Then just ask naturally:
-- "What Discord servers do I have?"
-- "Sync messages from #general"
-- "What's been discussed in #general?"
-- "Search Discord for 'project update'"
-
-## Manual Tool Usage
-
-### List Servers
-
-```bash
-python tools/discord_list.py --servers
-```
-
-### List Channels
-
-```bash
-python tools/discord_list.py --channels SERVER_ID
-```
-
-### Sync Messages
-
-```bash
-# Sync all channels in configured server
-python tools/discord_sync.py
-
-# Sync specific channel
-python tools/discord_sync.py --channel CHANNEL_ID
-
-# Sync last 7 days
-python tools/discord_sync.py --days 7
-```
-
-### Read Messages
-
-```bash
-# Read all messages
-python tools/discord_read.py --channel general
-
-# Read last 20 messages
-python tools/discord_read.py --channel general --last 20
-
-# Search for keyword
-python tools/discord_read.py --channel general --search "project"
-```
-
-### Send Messages
-
-```bash
-# Send to channel
-python tools/discord_send.py --channel CHANNEL_ID --message "Hello!"
-
-# Reply to a message
-python tools/discord_send.py --channel CHANNEL_ID --message "Reply" --reply-to MESSAGE_ID
-```
-
-## Data Storage
-
-Messages are stored as Markdown files:
-
-```
-data/
-└── {server_id}/
-    ├── sync_state.yaml
-    ├── server.yaml
-    └── {channel_name}/
-        ├── messages.md
-        └── channel.yaml
-```
-
-## Message Format
-
-Messages are formatted for easy LLM consumption:
-
-```markdown
-## 2026-01-03
-
-### 10:30 AM - @alice (123456789)
-Hello everyone!
-
-### 10:31 AM - @bob (987654321)
-↳ replying to @alice:
-Hey Alice!
-```
+Use at your own risk.
 
 ## License
 
-MIT License - Use at your own risk.
+MIT

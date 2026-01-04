@@ -2,6 +2,7 @@
 .env
 config/server.yaml
 data/
+.specstory/
 
 # Python
 __pycache__/

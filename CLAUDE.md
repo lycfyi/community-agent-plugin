@@ -8,6 +8,11 @@ This workspace contains tools for syncing and analyzing Discord messages using a
 
 ## Available Skills
 
+### discord-init
+Initialize configuration from your Discord account.
+- "Set up Discord"
+- "Configure my Discord server"
+
 ### discord-list
 List Discord servers and channels accessible with your token.
 - "What Discord servers do I have?"
@@ -32,6 +37,11 @@ Send messages to Discord channels (when implemented).
 
 ## Data Location
 
+**Overview of all synced data:**
+```
+data/manifest.yaml
+```
+
 Messages are stored in:
 ```
 data/{server_id}/{channel_name}/messages.md
@@ -48,18 +58,19 @@ data/{server_id}/server.yaml
 data/{server_id}/{channel_name}/channel.yaml
 ```
 
+The `manifest.yaml` provides a holistic view of all synced servers, channels, message counts, and quick-access paths.
+
 ## Configuration
 
 1. **Token**: Set `DISCORD_USER_TOKEN` in `.env`
-2. **Server**: Set `server_id` in `config/server.yaml`
+2. **Server**: Run `python tools/discord_init.py` to auto-configure (or manually edit `config/server.yaml`)
 
 ## Workflow
 
-1. Use discord-list to find server/channel IDs
-2. Configure server_id in config/server.yaml
-3. Use discord-sync to download messages
-4. Read messages.md files or use discord-read tool
-5. Use discord-send to respond (when needed)
+1. Use discord-init to auto-configure server (or discord-list to browse)
+2. Use discord-sync to download messages
+3. Read messages.md files or use discord-read tool
+4. Use discord-send to respond (when needed)
 
 ## Message Format
 

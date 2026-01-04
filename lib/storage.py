@@ -45,32 +45,72 @@ class Storage:
             name = name.replace(char, "_")
         return name.lower().strip()
 
+    def _slugify(self, name: str) -> str:
+        """Convert a name to a URL-friendly slug."""
+        import re
+        # Remove special characters, keep alphanumeric and spaces
+        slug = re.sub(r'[^\w\s-]', '', name.lower())
+        # Replace spaces with hyphens
+        slug = re.sub(r'[\s_]+', '-', slug)
+        # Remove leading/trailing hyphens
+        slug = slug.strip('-')
+        return slug
+
+    def _get_server_dir(self, server_id: str, server_name: Optional[str] = None) -> Path:
+        """Get server directory path with human-readable slug.
+
+        Format: {server_id}-{slug}
+        Example: 662267976984297473-midjourney
+
+        Args:
+            server_id: Discord server ID
+            server_name: Optional server name for slug (looked up if not provided)
+
+        Returns:
+            Path to server directory
+        """
+        # Try to find existing directory first (may already have slug)
+        for existing in self._base_dir.glob(f"{server_id}*"):
+            if existing.is_dir():
+                return existing
+
+        # Build new directory name with slug
+        if server_name:
+            slug = self._slugify(server_name)
+            return self._base_dir / f"{server_id}-{slug}"
+
+        # Fallback to just server_id
+        return self._base_dir / server_id
+
     # === Sync State ===
 
-    def get_sync_state(self, server_id: str) -> dict:
+    def get_sync_state(self, server_id: str, server_name: Optional[str] = None) -> dict:
         """Get sync state for a server.
 
         Args:
             server_id: Discord server ID
+            server_name: Optional server name for directory lookup
 
         Returns:
             Sync state dict, or empty dict if not found
         """
-        state_file = self._base_dir / server_id / "sync_state.yaml"
+        server_dir = self._get_server_dir(server_id, server_name)
+        state_file = server_dir / "sync_state.yaml"
         if not state_file.exists():
             return {}
 
         with open(state_file, "r") as f:
             return yaml.safe_load(f) or {}
 
-    def save_sync_state(self, server_id: str, state: dict):
+    def save_sync_state(self, server_id: str, state: dict, server_name: Optional[str] = None):
         """Save sync state for a server.
 
         Args:
             server_id: Discord server ID
             state: Sync state dict
+            server_name: Optional server name for directory slug
         """
-        server_dir = self._base_dir / server_id
+        server_dir = self._get_server_dir(server_id, server_name or state.get("server_name"))
         self._ensure_dir(server_dir)
 
         state_file = server_dir / "sync_state.yaml"
@@ -161,19 +201,22 @@ class Storage:
     def get_messages_file(
         self,
         server_id: str,
-        channel_name: str
+        channel_name: str,
+        server_name: Optional[str] = None
     ) -> Path:
         """Get path to messages file for a channel.
 
         Args:
             server_id: Discord server ID
             channel_name: Channel name
+            server_name: Optional server name for directory lookup
 
         Returns:
             Path to messages.md file
         """
         safe_name = self._sanitize_name(channel_name)
-        channel_dir = self._base_dir / server_id / safe_name
+        server_dir = self._get_server_dir(server_id, server_name)
+        channel_dir = server_dir / safe_name
         return channel_dir / "messages.md"
 
     def append_messages(
@@ -197,7 +240,8 @@ class Storage:
             return
 
         safe_name = self._sanitize_name(channel_name)
-        channel_dir = self._base_dir / server_id / safe_name
+        server_dir = self._get_server_dir(server_id, server_name)
+        channel_dir = server_dir / safe_name
         self._ensure_dir(channel_dir)
 
         messages_file = channel_dir / "messages.md"
@@ -386,7 +430,7 @@ class Storage:
             icon: Icon URL
             member_count: Member count
         """
-        server_dir = self._base_dir / server_id
+        server_dir = self._get_server_dir(server_id, server_name)
         self._ensure_dir(server_dir)
 
         metadata = {
@@ -405,7 +449,8 @@ class Storage:
         server_id: str,
         channel_id: str,
         channel_name: str,
-        category: Optional[str] = None
+        category: Optional[str] = None,
+        server_name: Optional[str] = None
     ):
         """Save channel metadata YAML file.
 
@@ -414,9 +459,11 @@ class Storage:
             channel_id: Channel ID
             channel_name: Channel name
             category: Category name
+            server_name: Optional server name for directory lookup
         """
         safe_name = self._sanitize_name(channel_name)
-        channel_dir = self._base_dir / server_id / safe_name
+        server_dir = self._get_server_dir(server_id, server_name)
+        channel_dir = server_dir / safe_name
         self._ensure_dir(channel_dir)
 
         metadata = {
@@ -428,6 +475,115 @@ class Storage:
 
         with open(channel_dir / "channel.yaml", "w") as f:
             yaml.safe_dump(metadata, f, default_flow_style=False)
+
+
+    # === Manifest (All-in-One Overview) ===
+
+    def update_manifest(self):
+        """Update the manifest.yaml with overview of all synced data.
+
+        Creates/updates data/manifest.yaml with:
+        - All synced servers and their channels
+        - Message counts and last sync times
+        - Quick access paths
+        """
+        self._ensure_dir(self._base_dir)
+        manifest_path = self._base_dir / "manifest.yaml"
+
+        # Scan all server directories
+        servers = []
+        total_messages = 0
+        total_channels = 0
+
+        for server_dir in self._base_dir.iterdir():
+            if not server_dir.is_dir():
+                continue
+
+            # Skip hidden directories
+            if server_dir.name.startswith('.'):
+                continue
+
+            # Read sync state
+            sync_state_file = server_dir / "sync_state.yaml"
+            if not sync_state_file.exists():
+                continue
+
+            with open(sync_state_file, "r") as f:
+                sync_state = yaml.safe_load(f) or {}
+
+            # Read server metadata if available
+            server_yaml = server_dir / "server.yaml"
+            server_meta = {}
+            if server_yaml.exists():
+                with open(server_yaml, "r") as f:
+                    server_meta = yaml.safe_load(f) or {}
+
+            # Build channel list
+            channels_data = sync_state.get("channels", {})
+            channels = []
+            server_message_count = 0
+
+            for channel_key, channel_info in channels_data.items():
+                msg_count = channel_info.get("message_count", 0)
+                server_message_count += msg_count
+                channels.append({
+                    "name": channel_info.get("name", channel_key),
+                    "id": channel_info.get("id"),
+                    "message_count": msg_count,
+                    "last_sync": channel_info.get("last_sync_at"),
+                    "path": f"{server_dir.name}/{channel_key}/messages.md"
+                })
+
+            total_messages += server_message_count
+            total_channels += len(channels)
+
+            # Sort channels by message count (most active first)
+            channels.sort(key=lambda c: c.get("message_count", 0), reverse=True)
+
+            servers.append({
+                "name": sync_state.get("server_name") or server_meta.get("name"),
+                "id": sync_state.get("server_id") or server_meta.get("id"),
+                "directory": server_dir.name,
+                "member_count": server_meta.get("member_count"),
+                "icon": server_meta.get("icon"),
+                "last_sync": sync_state.get("last_sync"),
+                "total_messages": server_message_count,
+                "channel_count": len(channels),
+                "channels": channels
+            })
+
+        # Sort servers by total messages (most active first)
+        servers.sort(key=lambda s: s.get("total_messages", 0), reverse=True)
+
+        # Build manifest
+        manifest = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": {
+                "total_servers": len(servers),
+                "total_channels": total_channels,
+                "total_messages": total_messages
+            },
+            "servers": servers
+        }
+
+        # Write manifest
+        with open(manifest_path, "w") as f:
+            yaml.safe_dump(manifest, f, default_flow_style=False, sort_keys=False)
+
+        return manifest
+
+    def get_manifest(self) -> dict:
+        """Get the current manifest data.
+
+        Returns:
+            Manifest dict, or empty dict if not found
+        """
+        manifest_path = self._base_dir / "manifest.yaml"
+        if not manifest_path.exists():
+            return self.update_manifest()
+
+        with open(manifest_path, "r") as f:
+            return yaml.safe_load(f) or {}
 
 
 # Global storage instance

@@ -81,6 +81,34 @@ class Config:
         """Get message retention days (default 30)."""
         return int(self._server_config.get("retention_days", 30))
 
+    @property
+    def profile(self) -> dict:
+        """Get user profile settings."""
+        return self._server_config.get("profile", {})
+
+    @property
+    def priority_servers(self) -> list:
+        """Get priority servers list."""
+        return self._server_config.get("priority_servers", [])
+
+    @property
+    def max_messages_per_channel(self) -> int:
+        """Get max messages to sync per channel (default 3000)."""
+        sync_limits = self._server_config.get("sync_limits", {})
+        return int(sync_limits.get("max_messages_per_channel", 3000))
+
+    @property
+    def max_channels_per_server(self) -> int:
+        """Get max channels to sync per server (default 5)."""
+        sync_limits = self._server_config.get("sync_limits", {})
+        return int(sync_limits.get("max_channels_per_server", 5))
+
+    @property
+    def priority_channels(self) -> list:
+        """Get list of priority channel names to sync first."""
+        sync_limits = self._server_config.get("sync_limits", {})
+        return sync_limits.get("priority_channels", [])
+
     def get_server_data_dir(self, server_id: str) -> Path:
         """Get data directory for a specific server."""
         return self.data_dir / server_id

@@ -33,7 +33,8 @@ async def sync_channel(
     channel_id: str,
     channel_name: str,
     days: int,
-    incremental: bool
+    incremental: bool,
+    max_messages: int = 3000
 ) -> int:
     """Sync messages from a single channel.
 
@@ -47,17 +48,21 @@ async def sync_channel(
         if after_id:
             print(f"  Incremental sync from message {after_id}")
 
-    # Fetch messages
+    # Fetch messages (with limit)
     messages = []
     async for msg in client.fetch_messages(
         server_id=server_id,
         channel_id=channel_id,
         after_id=after_id,
-        days=days
+        days=days,
+        limit=max_messages
     ):
         messages.append(msg)
         if len(messages) % 50 == 0:
             print(f"  Fetched {len(messages)} messages...")
+        if len(messages) >= max_messages:
+            print(f"  Reached limit of {max_messages} messages")
+            break
 
     if not messages:
         print(f"  No new messages to sync")
@@ -76,7 +81,8 @@ async def sync_channel(
     storage.save_channel_metadata(
         server_id=server_id,
         channel_id=channel_id,
-        channel_name=channel_name
+        channel_name=channel_name,
+        server_name=server_name
     )
 
     print(f"  Synced {len(messages)} messages")
@@ -90,6 +96,7 @@ async def sync_server(
     incremental: bool
 ) -> None:
     """Sync messages from a server."""
+    config = get_config()
     client = DiscordUserClient()
     storage = get_storage()
 
@@ -119,6 +126,11 @@ async def sync_server(
         # Get channels to sync
         all_channels = await client.list_channels(server_id)
 
+        # Get sync limits from config
+        max_channels = config.max_channels_per_server
+        max_messages = config.max_messages_per_channel
+        priority_channels = config.priority_channels
+
         if channel_id:
             # Sync specific channel
             channel_info = next(
@@ -131,10 +143,26 @@ async def sync_server(
 
             channels_to_sync = [channel_info]
         else:
-            # Sync all text channels
-            channels_to_sync = all_channels
+            # Sort channels: priority channels first, then by position
+            def channel_sort_key(ch):
+                name = ch.get("name", "").lower()
+                # Priority channels get negative index (come first)
+                if name in [p.lower() for p in priority_channels]:
+                    priority_idx = -1000 + [p.lower() for p in priority_channels].index(name)
+                else:
+                    priority_idx = ch.get("position", 999)
+                return priority_idx
 
-        print(f"Syncing {len(channels_to_sync)} channel(s)...")
+            sorted_channels = sorted(all_channels, key=channel_sort_key)
+
+            # Limit to max channels
+            channels_to_sync = sorted_channels[:max_channels]
+
+            if len(all_channels) > max_channels:
+                print(f"Limiting to top {max_channels} channels (of {len(all_channels)} total)")
+                print(f"  To sync more, set sync_limits.max_channels_per_server in config/server.yaml")
+
+        print(f"Syncing {len(channels_to_sync)} channel(s) (max {max_messages} messages each)...")
 
         total_messages = 0
         for channel in channels_to_sync:
@@ -147,9 +175,13 @@ async def sync_server(
                 channel_id=channel["id"],
                 channel_name=channel["name"],
                 days=days,
-                incremental=incremental
+                incremental=incremental,
+                max_messages=max_messages
             )
             total_messages += count
+
+        # Update manifest with all synced data
+        manifest = storage.update_manifest()
 
         # Print summary
         config = get_config()
@@ -159,6 +191,10 @@ async def sync_server(
         print(f"Sync complete!")
         print(f"Total messages: {total_messages}")
         print(f"Data location: {data_dir}")
+        print(f"Manifest: {config.data_dir}/manifest.yaml")
+        print(f"\nOverall: {manifest['summary']['total_servers']} servers, "
+              f"{manifest['summary']['total_channels']} channels, "
+              f"{manifest['summary']['total_messages']} messages")
 
     finally:
         await client.close()

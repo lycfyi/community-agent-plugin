@@ -36,16 +36,10 @@ class DiscordUserClient:
         if self._bot is not None and self._bot.is_ready():
             return self._bot
 
-        # Create new bot instance with self_bot=True
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.members = True
-        intents.guilds = True
-
+        # Create new bot instance for user token (discord.py-self)
         self._bot = commands.Bot(
             command_prefix="!",
-            self_bot=True,
-            intents=intents
+            self_bot=True
         )
 
         @self._bot.event
