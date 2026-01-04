@@ -11,9 +11,12 @@ A Claude Code plugin marketplace for community management tools.
 
 ```bash
 /plugin marketplace add https://github.com/lycfyi/community-agent-plugin
+/plugin install discord-agent
 ```
 
 Then select the plugin(s) you want to install from the marketplace.
+
+![Install Screenshot](assets/install.png)
 
 ## Available Plugins
 
