@@ -1,125 +1,125 @@
-# Discord Agent 快速开发工作流
+# Discord Agent Rapid Development Workflow
 
-## SpecStory → ClaudeCode 迭代 Loop
+## SpecStory → ClaudeCode Iteration Loop
 
-一个高效的 skill 开发和优化循环，利用真实对话数据驱动迭代。
+An efficient skill development and optimization loop driven by real conversation data.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │  SpecStory  │───▶│  人工校准   │───▶│ ClaudeCode  │     │
-│  │  记录对话   │    │  标注期望   │    │  分析优化   │     │
+│  │  SpecStory  │───▶│   Manual    │───▶│ ClaudeCode  │     │
+│  │   Record    │    │ Calibration │    │  Analysis   │     │
 │  └─────────────┘    └─────────────┘    └──────┬──────┘     │
 │         ▲                                      │            │
 │         │                                      │            │
 │         │         ┌─────────────┐              │            │
-│         └─────────│  更新 Skill │◀─────────────┘            │
-│                   │   迭代测试  │                           │
+│         └─────────│ Update Skill│◀─────────────┘            │
+│                   │   Iterate   │                           │
 │                   └─────────────┘                           │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 步骤详解
+## Step-by-Step Guide
 
-### 1. SpecStory 记录对话
+### 1. Record Conversations with SpecStory
 
-使用 [SpecStory](https://specstory.com) 自动记录与 Claude 的完整交互历史：
+Use [SpecStory](https://specstory.com) to automatically record complete interaction history with Claude:
 
-- 所有用户输入
-- Claude 的完整回复
-- 工具调用和结果
-- 错误信息和异常
+- All user inputs
+- Claude's complete responses
+- Tool calls and results
+- Error messages and exceptions
 
-**为什么用 SpecStory？**
+**Why SpecStory?**
 
-- 自动捕获，无需手动复制
-- 保留完整上下文
-- 方便回溯和分析
+- Automatic capture, no manual copying needed
+- Preserves full context
+- Easy to review and analyze
 
-### 2. 人工校准
+### 2. Manual Calibration
 
-在记录的对话中标注：
+Annotate the recorded conversations:
 
-- ✅ 正确的回复 - 符合预期
-- ❌ 错误的回复 - 需要修正
-- 💡 期望的回复 - 理想情况应该怎么回答
-- ⚠️ 边界情况 - 需要特殊处理的场景
+- ✅ Correct response - meets expectations
+- ❌ Incorrect response - needs correction
+- 💡 Expected response - what the ideal answer should be
+- ⚠️ Edge case - scenarios requiring special handling
 
-**校准重点：**
+**Calibration Focus:**
 
-- Claude 是否正确理解了用户意图？
-- 选择的 tool 是否合适？
-- 回复的格式和内容是否符合预期？
-- 有没有遗漏的功能或场景？
+- Did Claude correctly understand the user's intent?
+- Was the chosen tool appropriate?
+- Does the response format and content meet expectations?
+- Are there missing features or scenarios?
 
-### 3. 打包给 ClaudeCode 分析
+### 3. Submit to ClaudeCode for Analysis
 
-将整个对话历史提交给 ClaudeCode，要求分析：
-
-```
-请分析这段对话历史，识别：
-1. 哪些 skill 的定义需要优化？
-2. 是否需要新增 skill？
-3. 现有 tool 的参数设计是否合理？
-4. 有哪些边界情况没有覆盖？
-```
-
-### 4. Skill 迭代
-
-根据 ClaudeCode 的分析结果：
-
-- 更新 `skills/*/SKILL.md` 中的描述和示例
-- 优化 `tools/*.py` 中的实现逻辑
-- 补充缺失的功能
-- 添加边界情况处理
-
-## 最佳实践
-
-### 高效记录
-
-1. **场景覆盖**：确保对话覆盖主要使用场景
-2. **边界测试**：故意触发一些边界情况
-3. **错误恢复**：测试错误场景下的恢复能力
-
-### 高质量校准
-
-1. **及时标注**：对话结束后立即校准，记忆新鲜
-2. **具体描述**：写清楚为什么这个回复不对，期望是什么
-3. **优先级排序**：先修复影响大的问题
-
-### 有效分析
-
-1. **聚焦问题**：每次分析聚焦 1-2 个主题
-2. **对比验证**：优化后重新测试同样的场景
-3. **增量迭代**：小步快跑，频繁验证
-
-## 示例
-
-### 发现问题
+Submit the entire conversation history to ClaudeCode for analysis:
 
 ```
-用户: 帮我看看 Sisyphus Labs 最近在聊什么
-Claude: [调用 discord_read] ... 返回了太多无关消息
-
-校准: ❌ 应该先用 discord_list 找到正确的 channel，再 read
+Please analyze this conversation history and identify:
+1. Which skill definitions need optimization?
+2. Are new skills needed?
+3. Is the parameter design of existing tools reasonable?
+4. What edge cases are not covered?
 ```
 
-### 优化 Skill
+### 4. Skill Iteration
 
-更新 `discord-read/SKILL.md`：
+Based on ClaudeCode's analysis:
+
+- Update descriptions and examples in `skills/*/SKILL.md`
+- Optimize implementation logic in `tools/*.py`
+- Add missing functionality
+- Add edge case handling
+
+## Best Practices
+
+### Efficient Recording
+
+1. **Scenario coverage**: Ensure conversations cover main use cases
+2. **Edge testing**: Deliberately trigger edge cases
+3. **Error recovery**: Test recovery capability in error scenarios
+
+### High-Quality Calibration
+
+1. **Timely annotation**: Calibrate immediately after conversation while memory is fresh
+2. **Specific descriptions**: Clearly explain why a response is wrong and what's expected
+3. **Priority sorting**: Fix high-impact issues first
+
+### Effective Analysis
+
+1. **Focus on issues**: Each analysis focuses on 1-2 topics
+2. **Comparative verification**: Re-test the same scenarios after optimization
+3. **Incremental iteration**: Small steps, frequent validation
+
+## Example
+
+### Identifying a Problem
+
+```
+User: Show me what Sisyphus Labs has been discussing recently
+Claude: [calls discord_read] ... returned too many irrelevant messages
+
+Calibration: ❌ Should first use discord_list to find the correct channel, then read
+```
+
+### Optimizing the Skill
+
+Update `discord-read/SKILL.md`:
 
 ```markdown
-## 使用流程
+## Usage Flow
 
-1. 如果用户没有指定具体 channel，先用 discord_list 列出可用 channels
-2. 根据用户意图选择最相关的 channel
-3. 再调用 discord_read 获取消息
+1. If the user doesn't specify a channel, first use discord_list to list available channels
+2. Select the most relevant channel based on user intent
+3. Then call discord_read to fetch messages
 ```
 
-## 相关文件
+## Related Files
 
-- `skills/*/SKILL.md` - Skill 定义文件
-- `tools/*.py` - Tool 实现代码
-- `CLAUDE.md` - 项目整体说明
+- `skills/*/SKILL.md` - Skill definition files
+- `tools/*.py` - Tool implementation code
+- `CLAUDE.md` - Project overview
