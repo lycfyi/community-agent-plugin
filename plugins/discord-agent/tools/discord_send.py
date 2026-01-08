@@ -10,11 +10,12 @@ import argparse
 import asyncio
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lib.config import get_config, ConfigError
+from lib.config import ConfigError
 from lib.discord_client import (
     DiscordUserClient,
     DiscordClientError,
@@ -22,10 +23,27 @@ from lib.discord_client import (
 )
 
 
+async def check_permission(channel_id: str) -> tuple[bool, str]:
+    """Check if we have permission to send to a channel.
+
+    Args:
+        channel_id: Target channel ID
+
+    Returns:
+        Tuple of (can_send: bool, reason: str)
+    """
+    client = DiscordUserClient()
+    try:
+        return await client.check_send_permission(channel_id)
+    finally:
+        await client.close()
+
+
 async def send_message(
     channel_id: str,
     message: str,
-    reply_to_id: str = None
+    reply_to_id: Optional[str] = None,
+    check_only: bool = False
 ) -> dict:
     """Send a message to a Discord channel.
 
@@ -33,12 +51,22 @@ async def send_message(
         channel_id: Target channel ID
         message: Message content
         reply_to_id: Optional message ID to reply to
+        check_only: If True, only check permission without sending
 
     Returns:
-        Sent message info
+        Sent message info, or permission check result if check_only
     """
     client = DiscordUserClient()
     try:
+        # First check if we have permission
+        can_send, reason = await client.check_send_permission(channel_id)
+
+        if check_only:
+            return {"can_send": can_send, "reason": reason}
+
+        if not can_send:
+            raise DiscordClientError(reason)
+
         result = await client.send_message(
             channel_id=channel_id,
             content=message,
@@ -70,10 +98,33 @@ def main():
         metavar="MESSAGE_ID",
         help="Message ID to reply to (optional)"
     )
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Only check if we have permission to send (don't actually send)"
+    )
 
     args = parser.parse_args()
 
-    # Validate message content
+    # Handle check-only mode
+    if args.check_only:
+        try:
+            result = asyncio.run(send_message(
+                channel_id=args.channel,
+                message="",  # Not used in check-only mode
+                check_only=True
+            ))
+            if result["can_send"]:
+                print(f"Permission check passed: {result['reason']}")
+                sys.exit(0)
+            else:
+                print(f"Permission check failed: {result['reason']}", file=sys.stderr)
+                sys.exit(1)
+        except (ConfigError, AuthenticationError, DiscordClientError) as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Validate message content (only for actual send)
     if not args.message.strip():
         print("Error: Message cannot be empty", file=sys.stderr)
         sys.exit(1)

@@ -98,14 +98,16 @@ class DiscordUserClient:
 
         return guilds
 
-    async def list_channels(self, server_id: str) -> List[dict]:
+    async def list_channels(self, server_id: str, check_access: bool = False) -> List[dict]:
         """List text channels in a server.
 
         Args:
             server_id: Discord server/guild ID
+            check_access: If True, include 'accessible' field indicating read permission
 
         Returns:
             List of channel info dicts with id, name, type, category, position
+            If check_access=True, also includes 'accessible' boolean field
         """
         bot = await self._ensure_connected()
 
@@ -118,17 +120,82 @@ class DiscordUserClient:
 
         channels = []
         for channel in guild.text_channels:
-            channels.append({
+            channel_info = {
                 "id": str(channel.id),
                 "name": channel.name,
                 "type": "text",
                 "category": channel.category.name if channel.category else None,
                 "position": channel.position
-            })
+            }
+
+            if check_access:
+                # Check if we can read message history
+                perms = channel.permissions_for(guild.me)
+                channel_info["accessible"] = perms.read_message_history and perms.read_messages
+
+            channels.append(channel_info)
 
         # Sort by position
         channels.sort(key=lambda c: c["position"])
         return channels
+
+    async def check_channel_access(self, server_id: str, channel_id: str) -> bool:
+        """Check if we have read access to a specific channel.
+
+        Args:
+            server_id: Discord server ID
+            channel_id: Discord channel ID
+
+        Returns:
+            True if we can read messages from the channel
+        """
+        bot = await self._ensure_connected()
+
+        guild = bot.get_guild(int(server_id))
+        if guild is None:
+            return False
+
+        channel = guild.get_channel(int(channel_id))
+        if channel is None:
+            return False
+
+        perms = channel.permissions_for(guild.me)
+        return perms.read_message_history and perms.read_messages
+
+    async def check_send_permission(self, channel_id: str) -> tuple[bool, str]:
+        """Check if we have permission to send messages to a channel.
+
+        Args:
+            channel_id: Discord channel ID
+
+        Returns:
+            Tuple of (can_send: bool, reason: str)
+            If can_send is False, reason explains why
+        """
+        bot = await self._ensure_connected()
+
+        channel = bot.get_channel(int(channel_id))
+        if channel is None:
+            return False, f"Channel {channel_id} not found"
+
+        # Get the guild for the channel
+        if not hasattr(channel, 'guild') or channel.guild is None:
+            return False, "Could not determine channel's server"
+
+        guild = channel.guild
+        member = guild.me
+        if member is None:
+            return False, "Could not get bot member info"
+
+        perms = channel.permissions_for(member)
+
+        if not perms.send_messages:
+            return False, f"Missing permission to send messages in #{channel.name}"
+
+        if not perms.view_channel:
+            return False, f"Cannot view channel #{channel.name}"
+
+        return True, f"OK - can send to #{channel.name}"
 
     async def fetch_messages(
         self,
@@ -179,8 +246,7 @@ class DiscordUserClient:
             after=after,
             oldest_first=True
         ):
-            await self._rate_limiter.wait()
-
+            # discord.py handles rate limiting internally via HTTPClient
             yield self._message_to_dict(message)
             count += 1
 

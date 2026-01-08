@@ -17,6 +17,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from lib.discord_client import DiscordUserClient, DiscordClientError, AuthenticationError
+from lib.profile import ProfileManager
 
 
 async def init_config(server_id: str = None) -> None:
@@ -87,6 +88,16 @@ async def init_config(server_id: str = None) -> None:
         print(f"  Server: {selected['name']} ({selected['id']})")
         print(f"  Sync limits: {config['sync_limits']['max_channels_per_server']} channels, "
               f"{config['sync_limits']['max_messages_per_channel']} messages/channel")
+
+        # Create user profile if it doesn't exist
+        profile = ProfileManager()
+        if not profile.exists():
+            profile.create_default()
+            print(f"\n✓ User profile created at {profile.path}")
+            print(f"  Run 'python tools/discord_profile.py' to customize")
+        else:
+            print(f"\n✓ User profile exists at {profile.path}")
+
         print(f"\nNext steps:")
         print(f"  1. Sync messages: python tools/discord_sync.py")
         print(f"  2. Or ask Claude: 'Sync my Discord messages'")

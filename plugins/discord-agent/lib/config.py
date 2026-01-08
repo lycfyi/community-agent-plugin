@@ -108,8 +108,14 @@ sync_limits:
 
     @property
     def profile(self) -> dict:
-        """Get user profile settings."""
-        return self._server_config.get("profile", {})
+        """Get user profile settings.
+
+        DEPRECATED: Use lib.profile.ProfileManager instead.
+        Profile has moved to config/profile.md for richer tracking.
+        This property returns empty dict - use ProfileManager for profile data.
+        """
+        # Profile has moved to profile.md - return empty for backwards compatibility
+        return {}
 
     @property
     def priority_servers(self) -> list:

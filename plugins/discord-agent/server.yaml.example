@@ -32,35 +32,16 @@ sync_limits:
     - introductions
 
 # =============================================================================
-# USER PROFILE - Personalize your Discord analysis
+# USER PROFILE
 # =============================================================================
-
-profile:
-  # About you
-  name: ""        # Your name/alias
-  role: ""        # e.g., "developer", "community manager", "founder"
-
-  # Topics you care about - prioritized in summaries
-  interests:
-    - AI and machine learning
-    - Product development
-    # Add more...
-
-  # Keywords to highlight when reading messages
-  watch_keywords:
-    - bug
-    - feature request
-    - feedback
-    # Add more...
-
-  # Summarization style: "brief", "detailed", "actionable"
-  summary_style: "actionable"
-
-  # Time zone for display (e.g., "America/Los_Angeles", "Asia/Shanghai")
-  timezone: "UTC"
-
-  # Filter out spam/noise patterns
-  filter_spam: true
+# User profile has moved to config/profile.md for richer tracking.
+# Profile includes: interests, watch keywords, engagement patterns, activity history.
+#
+# To manage your profile:
+#   python tools/discord_profile.py           # View profile
+#   python tools/discord_profile.py --create  # Create profile
+#
+# Profile is auto-updated when you run summaries and other commands.
 
 # =============================================================================
 # PRIORITY SERVERS - Servers you want to focus on

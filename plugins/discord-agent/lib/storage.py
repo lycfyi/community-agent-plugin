@@ -1,6 +1,8 @@
 """Storage service for Markdown/YAML file I/O."""
 
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime, date, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -13,6 +15,51 @@ from .markdown_formatter import (
     format_message,
     group_messages_by_date
 )
+
+
+class SyncMode(Enum):
+    """Sync operation modes."""
+
+    QUICK = "quick"  # Fast initial sync with limited messages
+    FULL = "full"  # Complete historical sync
+    INCREMENTAL = "incremental"  # Only new messages since last sync
+    GAP_FILL = "gap_fill"  # Fill missing date ranges
+
+
+@dataclass
+class SyncProgress:
+    """Real-time progress tracking for sync operations."""
+
+    total_channels: int
+    completed_channels: int = 0
+    current_channel: Optional[str] = None
+    messages_fetched: int = 0
+    start_time: Optional[datetime] = None
+    channel_progress: Dict[str, int] = field(default_factory=dict)
+    channel_status: Dict[str, str] = field(default_factory=dict)
+
+    @property
+    def percentage(self) -> float:
+        """Calculate completion percentage."""
+        if self.total_channels == 0:
+            return 100.0
+        return (self.completed_channels / self.total_channels) * 100
+
+    @property
+    def elapsed_seconds(self) -> float:
+        """Get elapsed time in seconds."""
+        if self.start_time is None:
+            return 0.0
+        return (datetime.now(timezone.utc) - self.start_time).total_seconds()
+
+    @property
+    def eta_seconds(self) -> Optional[float]:
+        """Estimate remaining time in seconds."""
+        if self.completed_channels == 0 or self.elapsed_seconds == 0:
+            return None
+        rate = self.completed_channels / self.elapsed_seconds
+        remaining = self.total_channels - self.completed_channels
+        return remaining / rate if rate > 0 else None
 
 
 class StorageError(Exception):
@@ -142,7 +189,11 @@ class Storage:
         channel_name: str,
         channel_id: str,
         last_message_id: str,
-        message_count: int
+        message_count: int,
+        sync_mode: Optional[SyncMode] = None,
+        oldest_synced_date: Optional[date] = None,
+        newest_synced_date: Optional[date] = None,
+        oldest_message_id: Optional[str] = None
     ):
         """Update sync state for a channel.
 
@@ -153,6 +204,10 @@ class Storage:
             channel_id: Channel ID
             last_message_id: Last synced message ID
             message_count: Total message count for channel
+            sync_mode: The mode used for this sync operation
+            oldest_synced_date: Oldest date in synced range
+            newest_synced_date: Newest date in synced range
+            oldest_message_id: Oldest message ID synced
         """
         state = self.get_sync_state(server_id)
 
@@ -169,15 +224,77 @@ class Storage:
         existing = state["channels"].get(safe_name, {})
         existing_count = existing.get("message_count", 0)
 
+        # Preserve and extend date ranges
+        existing_oldest = existing.get("oldest_synced_date")
+        existing_newest = existing.get("newest_synced_date")
+
+        if oldest_synced_date:
+            if existing_oldest:
+                existing_oldest_date = date.fromisoformat(existing_oldest)
+                oldest_synced_date = min(existing_oldest_date, oldest_synced_date)
+        elif existing_oldest:
+            oldest_synced_date = date.fromisoformat(existing_oldest)
+
+        if newest_synced_date:
+            if existing_newest:
+                existing_newest_date = date.fromisoformat(existing_newest)
+                newest_synced_date = max(existing_newest_date, newest_synced_date)
+        elif existing_newest:
+            newest_synced_date = date.fromisoformat(existing_newest)
+
         state["channels"][safe_name] = {
             "id": channel_id,
             "name": channel_name,
             "message_count": existing_count + message_count,
             "last_message_id": last_message_id,
-            "last_sync_at": datetime.now(timezone.utc).isoformat()
+            "last_sync_at": datetime.now(timezone.utc).isoformat(),
+            "sync_mode": sync_mode.value if sync_mode else existing.get("sync_mode"),
+            "oldest_synced_date": oldest_synced_date.isoformat() if oldest_synced_date else None,
+            "newest_synced_date": newest_synced_date.isoformat() if newest_synced_date else None,
+            "oldest_message_id": oldest_message_id or existing.get("oldest_message_id")
         }
 
         self.save_sync_state(server_id, state)
+
+    def has_any_sync(self, server_id: str) -> bool:
+        """Check if a server has any previous sync data.
+
+        Args:
+            server_id: Discord server ID
+
+        Returns:
+            True if any channels have been synced
+        """
+        state = self.get_sync_state(server_id)
+        channels = state.get("channels", {})
+        return len(channels) > 0 and any(
+            ch.get("last_message_id") for ch in channels.values()
+        )
+
+    def is_channel_up_to_date(
+        self,
+        server_id: str,
+        channel_name: str,
+        target_date: Optional[date] = None
+    ) -> bool:
+        """Check if a channel is already synced up to the target date.
+
+        Args:
+            server_id: Discord server ID
+            channel_name: Channel name
+            target_date: Target date to check (defaults to today)
+
+        Returns:
+            True if channel is up to date
+        """
+        if target_date is None:
+            target_date = date.today()
+
+        channel_state = self.get_channel_sync_state(server_id, channel_name)
+        newest = channel_state.get("newest_synced_date")
+        if not newest:
+            return False
+        return date.fromisoformat(newest) >= target_date
 
     def get_last_message_id(
         self,
@@ -523,16 +640,44 @@ class Storage:
             channels = []
             server_message_count = 0
 
+            # Track server-wide date range
+            server_oldest_date = None
+            server_newest_date = None
+
             for channel_key, channel_info in channels_data.items():
                 msg_count = channel_info.get("message_count", 0)
                 server_message_count += msg_count
-                channels.append({
+
+                # Get channel date range
+                ch_oldest = channel_info.get("oldest_synced_date")
+                ch_newest = channel_info.get("newest_synced_date")
+
+                channel_entry = {
                     "name": channel_info.get("name", channel_key),
                     "id": channel_info.get("id"),
                     "message_count": msg_count,
                     "last_sync": channel_info.get("last_sync_at"),
                     "path": f"{server_dir.name}/{channel_key}/messages.md"
-                })
+                }
+
+                # Add date range if available
+                if ch_oldest or ch_newest:
+                    channel_entry["date_range"] = {
+                        "first_message": ch_oldest,
+                        "last_message": ch_newest
+                    }
+
+                    # Update server-wide date range
+                    if ch_oldest:
+                        ch_oldest_date = date.fromisoformat(ch_oldest)
+                        if server_oldest_date is None or ch_oldest_date < server_oldest_date:
+                            server_oldest_date = ch_oldest_date
+                    if ch_newest:
+                        ch_newest_date = date.fromisoformat(ch_newest)
+                        if server_newest_date is None or ch_newest_date > server_newest_date:
+                            server_newest_date = ch_newest_date
+
+                channels.append(channel_entry)
 
             total_messages += server_message_count
             total_channels += len(channels)
@@ -540,7 +685,7 @@ class Storage:
             # Sort channels by message count (most active first)
             channels.sort(key=lambda c: c.get("message_count", 0), reverse=True)
 
-            servers.append({
+            server_entry = {
                 "name": sync_state.get("server_name") or server_meta.get("name"),
                 "id": sync_state.get("server_id") or server_meta.get("id"),
                 "directory": server_dir.name,
@@ -550,7 +695,21 @@ class Storage:
                 "total_messages": server_message_count,
                 "channel_count": len(channels),
                 "channels": channels
-            })
+            }
+
+            # Add server-wide date range if available
+            if server_oldest_date or server_newest_date:
+                days_covered = 0
+                if server_oldest_date and server_newest_date:
+                    days_covered = (server_newest_date - server_oldest_date).days + 1
+
+                server_entry["date_range"] = {
+                    "first_message": server_oldest_date.isoformat() if server_oldest_date else None,
+                    "last_message": server_newest_date.isoformat() if server_newest_date else None,
+                    "days_covered": days_covered
+                }
+
+            servers.append(server_entry)
 
         # Sort servers by total messages (most active first)
         servers.sort(key=lambda s: s.get("total_messages", 0), reverse=True)

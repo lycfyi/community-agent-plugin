@@ -16,19 +16,50 @@ Generate summaries of synced Discord chat messages. Claude reads the message fil
 - User asks for an overview of Discord activity
 - User wants to catch up on Discord messages
 
+## Smart Defaults (Reduce Questions)
+
+**When user is vague, apply these defaults instead of asking:**
+
+| User Says | Default Action |
+|-----------|----------------|
+| "summarize Discord" | Summarize ALL synced data, last 7 days |
+| "what's happening" | Same as above |
+| "summarize [server name]" | All channels in that server, last 7 days |
+| No time specified | Default to last 7 days |
+
+**When NO data exists:**
+1. Don't just say "no data found"
+2. Run `/discord-quickstart` flow instead
+3. Offer to sync recommended servers, then summarize
+
+**Only ask for clarification when:**
+- Multiple interpretations are equally valid
+- User explicitly asks "which servers do I have?"
+
 ## How to Execute
+
+### Step 0: Handle Empty State
+
+First check if any data exists:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_status.py --json
+```
+
+If `sync.has_data` is false:
+- DON'T just say "no data, run sync first"
+- Instead, run the `/discord-quickstart` flow to help them sync
+- Then proceed to summarize
 
 ### Step 1: Get the Manifest
 
-First, get the manifest to understand what data is available. Use the manifest tool which auto-creates the data directory and manifest if they don't exist:
+Get the manifest to understand what data is available:
 
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/tools/discord_manifest.py
 ```
 
 This shows all synced servers, channels, message counts, and last sync times.
-
-If no data exists, the tool will guide the user to sync first.
 
 **CRITICAL PATH RESOLUTION:** All data paths shown in the manifest are relative to the **current working directory** (cwd) where Claude is running - NOT relative to this skill file or the plugin directory.
 
@@ -83,6 +114,32 @@ Produce a summary including:
 - **Notable discussions**: Important conversations or decisions
 - **Questions asked**: Unanswered questions if relevant
 - **Sentiment**: Overall tone (helpful, heated, casual, etc.)
+
+### Step 6: Update User Profile
+
+After generating the summary, update the user profile to track engagement and learn interests:
+
+```bash
+# Add engagement for servers/channels summarized
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_profile.py --add-interest "TOPIC_FROM_SUMMARY"
+```
+
+Or programmatically via ProfileManager:
+```python
+from lib.profile import get_profile
+
+profile = get_profile()
+profile.learn_from_summary(
+    servers=["Claude Developers"],      # Servers that were summarized
+    channels=["general", "help"],       # Channels that were summarized
+    topics=["API usage", "new features"]  # Key topics extracted from summary
+)
+```
+
+This allows the profile to:
+- Track which servers/channels user focuses on (engagement scores)
+- Learn interests from topics discussed
+- Log activity for future reference
 
 ## Example Usage
 
