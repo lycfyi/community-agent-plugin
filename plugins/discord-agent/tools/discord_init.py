@@ -124,15 +124,10 @@ def main():
     env_path = Path.cwd() / ".env"
     if not env_path.exists():
         print("Error: .env file not found in workspace root.")
-        print("\nCreate .env with your Discord token:")
-        print("  cp plugins/discord-agent/.env.example .env")
-        print("  # Then edit .env and add your token")
-        print("\nTo get your token:")
-        print("  1. Open Discord in browser")
-        print("  2. Press F12 → Network tab")
-        print("  3. Do any action in Discord")
-        print("  4. Find request to discord.com/api")
-        print("  5. Copy 'Authorization' header value")
+        print("\nTo set up Discord:")
+        print("  1. Get your token: https://discordhunt.com/articles/how-to-get-discord-user-token")
+        print("  2. Create .env file with:")
+        print("     DISCORD_USER_TOKEN=your_token_here")
         sys.exit(1)
 
     try:

@@ -54,15 +54,10 @@ class DiscordUserClient:
             await asyncio.wait_for(self._ready.wait(), timeout=30.0)
         except discord.LoginFailure as e:
             raise AuthenticationError(
-                f"Failed to authenticate with Discord. "
-                f"Your token may be invalid or expired.\n"
-                f"To get a new token:\n"
-                f"1. Open Discord in your browser\n"
-                f"2. Press F12 for Developer Tools\n"
-                f"3. Go to Network tab\n"
-                f"4. Perform any action in Discord\n"
-                f"5. Find a request to discord.com/api\n"
-                f"6. Copy the 'Authorization' header value\n"
+                f"Discord token is invalid or expired.\n\n"
+                f"Get a new token: https://discordhunt.com/articles/how-to-get-discord-user-token\n\n"
+                f"Then update your .env file:\n"
+                f"  DISCORD_USER_TOKEN=your_new_token\n\n"
                 f"Original error: {e}"
             ) from e
         except asyncio.TimeoutError:

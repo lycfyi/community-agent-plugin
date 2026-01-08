@@ -50,6 +50,7 @@ Creates/updates `./config/server.yaml` with:
 ## Prerequisites
 
 - `./.env` file with `DISCORD_USER_TOKEN` set (in cwd)
+- Get your token: https://discordhunt.com/articles/how-to-get-discord-user-token
 
 ## Next Steps
 

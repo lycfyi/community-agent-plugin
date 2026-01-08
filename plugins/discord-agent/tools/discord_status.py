@@ -234,8 +234,9 @@ def format_status(
     # Next steps
     lines.append("Next Steps:")
     if not token_ok:
-        lines.append("  1. Create .env with DISCORD_USER_TOKEN=your_token")
-        lines.append("  2. Run /discord-list to see your servers")
+        lines.append("  1. Get token: https://discordhunt.com/articles/how-to-get-discord-user-token")
+        lines.append("  2. Create .env with DISCORD_USER_TOKEN=your_token")
+        lines.append("  3. Run /discord-list to see your servers")
     elif not sync_status["has_data"]:
         lines.append("  Run /discord-sync to pull messages")
     else:

@@ -24,7 +24,8 @@ python ${CLAUDE_PLUGIN_ROOT}/tools/discord_status.py --json
 ```
 
 Analyze the JSON output:
-- If `token.configured` is false → Guide user to set up `.env`
+- If `token.configured` is false → Guide user to get token from https://discordhunt.com/articles/how-to-get-discord-user-token and add to `.env`
+- If `connection.connected` is false with "Invalid or expired token" → Token expired, guide user to refresh it from the same URL above
 - If `sync.has_data` is true → User already has data, skip to Step 4
 - Otherwise → Continue to Step 2
 
@@ -119,7 +120,7 @@ Then suggest next actions:
 
 ## Prerequisites
 
-- `.env` with `DISCORD_USER_TOKEN`
+- `.env` with `DISCORD_USER_TOKEN` (get it from https://discordhunt.com/articles/how-to-get-discord-user-token)
 
 ## Anti-patterns to Avoid
 
