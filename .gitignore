@@ -1,6 +1,6 @@
 # User secrets & runtime data
 .env
-config/server.yaml
+config/agents.yaml
 data/
 .specstory/
 .claude/

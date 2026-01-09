@@ -85,7 +85,7 @@ Sync state tracked in: `./data/{server_id}/sync_state.yaml`
 ## Prerequisites
 
 - `./.env` file with `DISCORD_USER_TOKEN` set (in cwd)
-- `./config/server.yaml` with `server_id` configured (unless using --server flag)
+- `./config/agents.yaml` with `discord.default_server_id` configured (unless using --server flag)
 
 ## Incremental Sync
 

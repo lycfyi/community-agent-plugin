@@ -23,9 +23,9 @@ This plugin provides skills for syncing and analyzing Discord messages. Messages
 
 ```
 your-project/                       # Current working directory (where you run Claude)
-├── .env                           # Your Discord token
+├── .env                           # Your credentials (Discord, Telegram, etc.)
 ├── config/
-│   └── server.yaml                # Your server config
+│   └── agents.yaml                # Unified config for all platforms
 ├── data/                          # Synced messages (auto-created)
 │   ├── manifest.yaml
 │   └── {server_id}/...

@@ -8,7 +8,7 @@ from typing import Callable, List, Optional
 import discord
 
 from .config import get_config
-from .discord_client import DiscordUserClient, DiscordClientError
+from .discord_client import DiscordClientError, DiscordUserClient
 from .rate_limiter import EnhancedProgressTracker, format_duration
 from .storage import Storage, SyncMode, get_storage
 
@@ -97,6 +97,11 @@ class ParallelSyncOrchestrator:
         self._results: List[ChannelSyncResult] = []
         self._lock = asyncio.Lock()
 
+        # Get parallelism limit from config (default 1 = sequential)
+        config = get_config()
+        self._max_concurrent = config.parallel_channels
+        self._semaphore = asyncio.Semaphore(self._max_concurrent)
+
     async def sync_all_channels(
         self,
         channels: List[dict],
@@ -120,18 +125,16 @@ class ParallelSyncOrchestrator:
             progress_callback=self.progress_callback,
         )
 
-        self._log(f"Starting parallel sync of {len(channels)} channels...")
+        mode = "sequential" if self._max_concurrent == 1 else f"parallel ({self._max_concurrent} concurrent)"
+        self._log(f"Starting {mode} sync of {len(channels)} channels...")
 
         # Determine effective limit
         limit = self.quick_limit if self.quick_mode else max_messages_per_channel
 
-        # Create tasks for parallel execution
-        tasks = [
-            self._sync_channel_with_retry(channel, limit)
-            for channel in channels
-        ]
+        # Create tasks with semaphore-limited execution
+        tasks = [self._sync_channel_with_semaphore(channel, limit) for channel in channels]
 
-        # Execute all channels in parallel
+        # Execute all channels (parallelism controlled by semaphore)
         await asyncio.gather(*tasks, return_exceptions=True)
 
         # Calculate duration
@@ -167,6 +170,15 @@ class ParallelSyncOrchestrator:
         self._log(f"\nSync complete: {total_messages:,} messages from {channels_processed} channels in {duration:.1f}s")
 
         return summary
+
+    async def _sync_channel_with_semaphore(
+        self,
+        channel: dict,
+        limit: int,
+    ) -> ChannelSyncResult:
+        """Sync a channel with semaphore-controlled concurrency."""
+        async with self._semaphore:
+            return await self._sync_channel_with_retry(channel, limit)
 
     async def _sync_channel_with_retry(
         self,
@@ -245,9 +257,7 @@ class ParallelSyncOrchestrator:
             self._progress_tracker.start_channel(channel_name)
 
         # Check if already up to date
-        if self.incremental and self.storage.is_channel_up_to_date(
-            self.server_id, channel_name
-        ):
+        if self.incremental and self.storage.is_channel_up_to_date(self.server_id, channel_name):
             result = ChannelSyncResult(
                 channel_id=channel_id,
                 channel_name=channel_name,

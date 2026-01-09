@@ -1,6 +1,6 @@
 {
-  "name": "discord-agent",
-  "version": "0.2.1",
+  "name": "discord-connector",
+  "version": "1.0.0",
   "description": "Sync, read, and analyze Discord messages with Claude Code. Includes skills for message syncing, channel browsing, and chat summarization.",
   "author": {
     "name": "lycfyi",
@@ -9,5 +9,11 @@
   "homepage": "https://github.com/lycfyi/community-agent-plugin",
   "repository": "https://github.com/lycfyi/community-agent-plugin",
   "license": "AGPL-3.0",
-  "keywords": ["discord", "community", "sync", "messages", "analysis"]
+  "keywords": [
+    "discord",
+    "community",
+    "sync",
+    "messages",
+    "analysis"
+  ]
 }

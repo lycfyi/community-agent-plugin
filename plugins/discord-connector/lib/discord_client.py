@@ -27,7 +27,10 @@ class DiscordUserClient:
     def __init__(self):
         """Initialize the Discord user client."""
         self._config = get_config()
-        self._rate_limiter = RateLimiter()
+        self._rate_limiter = RateLimiter(
+            base_delay=self._config.rate_limit_base_delay,
+            max_delay=self._config.rate_limit_max_delay,
+        )
         self._bot: Optional[commands.Bot] = None
         self._ready = asyncio.Event()
 

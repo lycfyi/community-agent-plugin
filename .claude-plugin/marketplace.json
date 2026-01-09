@@ -6,20 +6,62 @@
   },
   "metadata": {
     "description": "Community agent plugins for Claude Code",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "discord-agent",
-      "description": "Sync, read, and analyze Discord messages with Claude Code. Includes skills for message syncing, channel browsing, and chat summarization.",
-      "version": "0.1.0",
+      "name": "community-agent",
+      "description": "Core shared library for community agent plugins. Provides storage, formatting, and configuration utilities.",
+      "version": "1.0.0",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"
       },
       "homepage": "https://github.com/lycfyi/community-agent-plugin",
-      "tags": ["discord", "community", "sync", "messages", "analysis"],
-      "source": "./plugins/discord-agent"
+      "tags": [
+        "community",
+        "storage",
+        "config",
+        "core",
+        "library"
+      ],
+      "source": "./plugins/community-agent"
+    },
+    {
+      "name": "discord-connector",
+      "description": "Sync, read, and analyze Discord messages with Claude Code. Includes skills for message syncing, channel browsing, and chat summarization.",
+      "version": "1.0.0",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/community-agent-plugin",
+      "tags": [
+        "discord",
+        "community",
+        "sync",
+        "messages",
+        "analysis"
+      ],
+      "source": "./plugins/discord-connector"
+    },
+    {
+      "name": "telegram-connector",
+      "description": "Sync, read, and analyze Telegram messages with Claude Code. Includes skills for message syncing, group browsing, and chat analysis.",
+      "version": "1.0.0",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/community-agent-plugin",
+      "tags": [
+        "telegram",
+        "community",
+        "sync",
+        "messages",
+        "analysis"
+      ],
+      "source": "./plugins/telegram-connector"
     }
   ]
 }

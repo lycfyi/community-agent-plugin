@@ -1,0 +1,13 @@
+{
+  "name": "community-agent",
+  "version": "1.0.0",
+  "description": "Core shared library for community agent plugins. Provides storage, formatting, and configuration utilities for multi-platform community management.",
+  "author": {
+    "name": "lycfyi",
+    "url": "https://github.com/lycfyi"
+  },
+  "homepage": "https://github.com/lycfyi/community-agent-plugin",
+  "repository": "https://github.com/lycfyi/community-agent-plugin",
+  "license": "AGPL-3.0",
+  "keywords": ["community", "storage", "config", "core", "library"]
+}

@@ -13,7 +13,7 @@ Automatically configure the Discord server from your account.
 - User says "connect my Discord account"
 - User says "initialize Discord"
 - First time setup before syncing
-- When `config/server.yaml` doesn't exist or needs updating
+- When `config/agents.yaml` doesn't exist or needs updating
 
 ## How to Execute
 
@@ -37,15 +37,15 @@ All paths are relative to cwd (current working directory):
 2. Lists all servers you have access to
 3. If one server: auto-selects it
 4. If multiple: selects the first one (or use `--server` to pick)
-5. Saves configuration to `./config/server.yaml`
+5. Saves configuration to `./config/agents.yaml`
 
 ## Output
 
-Creates/updates `./config/server.yaml` with:
-- `server_id`: Your Discord server ID
-- `server_name`: Server display name
-- `data_dir`: Where messages are stored
-- `retention_days`: Default sync history
+Updates `./config/agents.yaml` with Discord settings:
+- `discord.default_server_id`: Your Discord server ID
+- `discord.default_server_name`: Server display name
+- `data_dir`: Where messages are stored (shared setting)
+- `discord.retention_days`: Default sync history
 
 ## Prerequisites
 
