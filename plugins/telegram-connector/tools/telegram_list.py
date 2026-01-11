@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""List Telegram groups and topics.
+"""List Telegram groups, channels, and DMs.
 
 Usage:
-    python telegram_list.py [--group GROUP_ID] [--json]
+    python telegram_list.py [--group GROUP_ID] [--no-dms] [--json]
 
 Options:
     --group GROUP_ID    List topics in specific group
+    --no-dms            Exclude DMs from listing
     --json              Output as JSON instead of human-readable
 
 Output:
-    Human-readable table or JSON array of groups/topics
+    Human-readable table or JSON array of groups/topics/DMs
 
 Exit Codes:
     0 - Success
@@ -35,17 +36,18 @@ from lib.telegram_client import (
 )
 
 
-async def list_groups(client: TelegramUserClient, output_json: bool) -> int:
-    """List all accessible groups.
+async def list_groups(client: TelegramUserClient, output_json: bool, include_dms: bool = True) -> int:
+    """List all accessible groups, channels, and optionally DMs.
 
     Args:
         client: Connected Telegram client
         output_json: Whether to output as JSON
+        include_dms: Include DMs in listing (default: True)
 
     Returns:
         Exit code
     """
-    groups = await client.list_dialogs()
+    groups = await client.list_dialogs(include_dms=include_dms)
 
     if not groups:
         if output_json:
@@ -57,25 +59,53 @@ async def list_groups(client: TelegramUserClient, output_json: bool) -> int:
     # Filter out empty names
     groups = [g for g in groups if g.get("name")]
 
+    # Separate DMs from groups/channels for cleaner display
+    dms = [g for g in groups if g.get("type") == "private"]
+    non_dms = [g for g in groups if g.get("type") != "private"]
+
     if output_json:
         print(json.dumps(groups, indent=2))
     else:
-        print(f"Found {len(groups)} groups/channels:")
-        print()
-        print(f"{'ID':<15} {'Type':<12} {'Members':<10} {'Topics':<8} {'Name'}")
-        print("-" * 70)
+        # Show groups/channels first
+        if non_dms:
+            print(f"Found {len(non_dms)} groups/channels:")
+            print()
+            print(f"{'ID':<15} {'Type':<12} {'Members':<10} {'Topics':<8} {'Name'}")
+            print("-" * 70)
 
-        for group in groups:
-            group_id = group["id"]
-            group_type = group["type"]
-            member_count = group.get("member_count", 0)
-            has_topics = "Yes" if group.get("has_topics") else "-"
-            name = group["name"][:35]  # Truncate long names
+            for group in non_dms:
+                group_id = group["id"]
+                group_type = group["type"]
+                member_count = group.get("member_count", 0)
+                has_topics = "Yes" if group.get("has_topics") else "-"
+                name = group["name"][:35]  # Truncate long names
 
-            print(f"{group_id:<15} {group_type:<12} {member_count:<10} {has_topics:<8} {name}")
+                print(f"{group_id:<15} {group_type:<12} {member_count:<10} {has_topics:<8} {name}")
+
+        # Show DMs if any
+        if dms:
+            if non_dms:
+                print()
+            print(f"Found {len(dms)} DMs:")
+            print()
+            print(f"{'ID':<15} {'Type':<12} {'Username':<20} {'Name'}")
+            print("-" * 60)
+
+            for dm in dms:
+                dm_id = dm["id"]
+                dm_type = dm["type"]
+                username = f"@{dm.get('username')}" if dm.get("username") else "-"
+                name = dm["name"][:35]
+
+                print(f"{dm_id:<15} {dm_type:<12} {username:<20} {name}")
+
+        if not non_dms and not dms:
+            print("No groups or DMs found.")
 
         print()
         print("Tip: Use --group GROUP_ID to list topics in a forum group")
+        if include_dms:
+            print("Tip: Use --no-dms to exclude DMs from listing")
 
     return 0
 
@@ -176,7 +206,8 @@ async def main(args: argparse.Namespace) -> int:
         if args.group:
             return await list_topics(client, int(args.group), args.json)
         else:
-            return await list_groups(client, args.json)
+            include_dms = not args.no_dms
+            return await list_groups(client, args.json, include_dms=include_dms)
 
     except AuthenticationError as e:
         print(f"Authentication error: {e}", file=sys.stderr)
@@ -194,12 +225,18 @@ async def main(args: argparse.Namespace) -> int:
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="List Telegram groups and topics"
+        description="List Telegram groups, channels, and DMs"
     )
     parser.add_argument(
         "--group",
         type=str,
         help="Group ID to list topics for"
+    )
+    parser.add_argument(
+        "--no-dms",
+        action="store_true",
+        dest="no_dms",
+        help="Exclude DMs from listing"
     )
     parser.add_argument(
         "--json",

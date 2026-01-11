@@ -14,22 +14,41 @@ Sync Telegram messages to local Markdown storage.
 - "fetch Telegram messages"
 - "download Telegram history"
 - "telegram sync"
+- "sync my Telegram DMs"
 
 ## Description
 
-This skill downloads messages from Telegram groups to local Markdown files. Messages are stored in an LLM-friendly format that can be easily read and analyzed.
+This skill downloads messages from Telegram groups and DMs to local Markdown files. Messages are stored in an LLM-friendly format that can be easily read and analyzed.
+
+**DMs are synced by default.** Use `--no-dms` to sync groups only.
 
 ## Usage
 
-Sync default group (last 7 days):
+### Basic Sync (Groups + DMs)
+
+Sync all (groups + DMs, last 7 days):
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py
 ```
 
-Sync specific group:
+Sync groups only (exclude DMs):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --no-dms
+```
+
+### Sync Specific Group
+
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --group 1234567890
 ```
+
+### Sync Specific DM
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --dm 123456789
+```
+
+### Time Range
 
 Sync last 30 days:
 ```bash
@@ -41,23 +60,36 @@ Full sync (ignore previous state):
 python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --full
 ```
 
+### Forum Topics
+
 Sync specific topic in a forum group:
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --group 1234567890 --topic 5
 ```
 
-Sync with custom message limit (for longer lookbacks):
+### Custom Limits
+
+Sync with custom message limit for groups:
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --days 30 --limit 5000
 ```
 
-## Message Limit
+Sync with custom DM limit (default is 100 for privacy):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --dm-limit 500
+```
 
-The `--limit` option controls the maximum number of messages to sync per group/topic.
+## Message Limits
 
+### Group Limit (`--limit`)
 - Default: 2000 (configurable in `config/agents.yaml`)
 - Use higher limits for longer lookback periods
 - Example: `--days 90 --limit 10000` for 90-day archive
+
+### DM Limit (`--dm-limit`)
+- Default: 100 (privacy-conscious default)
+- Lower than group limit by design
+- Increase manually if needed: `--dm-limit 500`
 
 ## Sync Modes
 
@@ -73,7 +105,9 @@ The `--limit` option controls the maximum number of messages to sync per group/t
 
 ## Output
 
-Messages are saved to:
+### Groups
+
+Group messages are saved to:
 ```
 data/{group_id}-{slug}/messages.md
 data/{group_id}-{slug}/sync_state.yaml
@@ -83,6 +117,16 @@ data/{group_id}-{slug}/group.yaml
 For forum groups with topics:
 ```
 data/{group_id}-{slug}/{topic_name}/messages.md
+```
+
+### DMs
+
+DM messages are saved to a separate directory:
+```
+dms/telegram/{user_id}-{name}/messages.md
+dms/telegram/{user_id}-{name}/sync_state.yaml
+dms/telegram/{user_id}-{name}/user.yaml
+dms/telegram/manifest.yaml
 ```
 
 ## Rate Limiting

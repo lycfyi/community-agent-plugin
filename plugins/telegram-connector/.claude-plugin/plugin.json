@@ -1,6 +1,6 @@
 {
   "name": "telegram-connector",
-  "version": "1.0.0",
+  "version": "1.0.1rc1",
   "description": "Sync, read, and analyze Telegram messages with Claude Code. Includes skills for message syncing, group browsing, and chat analysis.",
   "author": {
     "name": "lycfyi",
@@ -9,5 +9,11 @@
   "homepage": "https://github.com/lycfyi/community-agent-plugin",
   "repository": "https://github.com/lycfyi/community-agent-plugin",
   "license": "AGPL-3.0",
-  "keywords": ["telegram", "community", "sync", "messages", "analysis"]
+  "keywords": [
+    "telegram",
+    "community",
+    "sync",
+    "messages",
+    "analysis"
+  ]
 }

@@ -5,7 +5,7 @@ description: "List Telegram groups and channels. Use when user asks about availa
 
 # telegram-list
 
-List Telegram groups, channels, and forum topics.
+List Telegram groups, channels, DMs, and forum topics.
 
 ## Trigger Phrases
 
@@ -14,16 +14,22 @@ List Telegram groups, channels, and forum topics.
 - "show my Telegram channels"
 - "telegram list"
 - "list topics in [group]"
+- "list my Telegram DMs"
 
 ## Description
 
-This skill lists all accessible Telegram groups and channels. For groups with forum topics enabled, you can also list the individual topics.
+This skill lists all accessible Telegram groups, channels, and DMs. DMs are included by default. For groups with forum topics enabled, you can also list the individual topics.
 
 ## Usage
 
-List all groups:
+List all groups and DMs (default):
 ```bash
 python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_list.py
+```
+
+List groups only (exclude DMs):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_list.py --no-dms
 ```
 
 List topics in a specific group:
@@ -47,6 +53,14 @@ ID              Type         Members    Topics   Name
 ----------------------------------------------------------------------
 1234567890      supergroup   1500       Yes      My Community
 9876543210      channel      5000       -        News Channel
+...
+
+Found 3 DMs:
+
+ID              Type         Username             Name
+------------------------------------------------------------
+111222333       private      @alice               Alice Smith
+444555666       private      -                    Bob Jones
 ...
 ```
 

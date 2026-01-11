@@ -5,7 +5,7 @@ description: "Send messages to Telegram channels. Use when user wants to post, r
 
 # telegram-send
 
-Send messages to Telegram groups.
+Send messages to Telegram groups or DMs.
 
 ## Trigger Phrases
 
@@ -14,10 +14,12 @@ Send messages to Telegram groups.
 - "reply on Telegram"
 - "message the Telegram group"
 - "telegram send"
+- "send a DM on Telegram"
+- "message someone on Telegram"
 
 ## Description
 
-This skill sends messages to Telegram groups. It requires confirmation before sending to prevent accidental messages.
+This skill sends messages to Telegram groups or direct messages (DMs). It requires confirmation before sending to prevent accidental messages.
 
 **WARNING**: Using a user token may violate Telegram's Terms of Service. This tool is intended for personal use only.
 
@@ -48,6 +50,20 @@ Skip confirmation prompt:
 python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_send.py --message "Hello" --confirm
 ```
 
+## Sending DMs
+
+Send a direct message to a user:
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_send.py --dm USER_ID --message "Hello!"
+```
+
+Reply to a DM message:
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_send.py --dm USER_ID --message "Got it!" --reply-to 12345
+```
+
+**Finding User IDs:** Use `telegram-list` to see your DMs and their user IDs.
+
 ## Confirmation
 
 By default, the tool shows your message and asks for confirmation:
@@ -65,9 +81,19 @@ Use `--confirm` to skip this prompt (useful for automation).
 
 ## Output
 
-On success:
+On success (group):
 ```
 Sending to: My Group (1234567890)
+
+========================================
+Message sent successfully!
+Message ID: 98765
+Timestamp: 2026-01-06T12:00:00+00:00
+```
+
+On success (DM):
+```
+Sending DM to: Alice (@alice)
 
 ========================================
 Message sent successfully!

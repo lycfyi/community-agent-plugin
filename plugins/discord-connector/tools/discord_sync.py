@@ -29,7 +29,7 @@ from lib.discord_client import (
     DiscordClientError,
     AuthenticationError
 )
-from lib.storage import get_storage, SyncMode
+from lib.storage import get_storage, SyncMode, DM_DEFAULT_LIMIT
 from lib.parallel_sync import ParallelSyncOrchestrator, SyncSummary
 from lib.rate_limiter import format_duration, estimate_sync_time
 
@@ -96,6 +96,144 @@ async def sync_channel(
 
     print(f"  Synced {len(messages)} messages")
     return len(messages)
+
+
+async def sync_dm(
+    client: DiscordUserClient,
+    storage,
+    channel_id: str,
+    user_id: str,
+    username: str,
+    display_name: str,
+    avatar: Optional[str],
+    days: int,
+    incremental: bool,
+    limit: int = DM_DEFAULT_LIMIT
+) -> int:
+    """Sync messages from a single DM.
+
+    Args:
+        client: Discord client
+        storage: Storage instance
+        channel_id: DM channel ID
+        user_id: User ID
+        username: Username
+        display_name: Display name
+        avatar: Avatar URL
+        days: Days of history to fetch
+        incremental: Whether to do incremental sync
+        limit: Max messages to fetch
+
+    Returns:
+        Number of messages synced
+    """
+    # Get last message ID for incremental sync
+    after_id = None
+    if incremental:
+        after_id = storage.get_dm_last_message_id(user_id)
+        if after_id:
+            print(f"  Incremental sync from message {after_id}")
+
+    # Fetch messages
+    messages = []
+    async for msg in client.fetch_dm_messages(
+        channel_id=channel_id,
+        after_id=after_id,
+        days=days,
+        limit=limit
+    ):
+        messages.append(msg)
+        if len(messages) % 25 == 0:
+            print(f"  Fetched {len(messages)} messages...")
+        if len(messages) >= limit:
+            print(f"  Reached limit of {limit} messages")
+            break
+
+    if not messages:
+        print(f"  No new messages to sync")
+        return 0
+
+    # Save user metadata
+    storage.save_dm_metadata(
+        user_id=user_id,
+        username=username,
+        display_name=display_name,
+        avatar=avatar
+    )
+
+    # Save messages to storage
+    storage.append_dm_messages(
+        user_id=user_id,
+        username=username,
+        display_name=display_name,
+        channel_id=channel_id,
+        messages=messages
+    )
+
+    print(f"  Synced {len(messages)} messages")
+    return len(messages)
+
+
+async def sync_all_dms(
+    client: DiscordUserClient,
+    storage,
+    days: int,
+    incremental: bool,
+    limit: int = DM_DEFAULT_LIMIT
+) -> tuple[int, int]:
+    """Sync all DM channels.
+
+    Args:
+        client: Discord client
+        storage: Storage instance
+        days: Days of history to fetch
+        incremental: Whether to do incremental sync
+        limit: Max messages per DM
+
+    Returns:
+        Tuple of (total_messages, dm_count)
+    """
+    print("Fetching DM channels...")
+    dms = await client.list_dms()
+
+    if not dms:
+        print("No DMs found.")
+        return 0, 0
+
+    print(f"Found {len(dms)} DM(s). Syncing (max {limit} msgs each)...")
+
+    total_messages = 0
+    synced_count = 0
+
+    for dm in dms:
+        channel_id = dm["id"]
+        user_id = dm["user_id"]
+        username = dm.get("username", "unknown")
+        display_name = dm.get("display_name", username)
+        avatar = dm.get("avatar")
+
+        print(f"\nDM with {display_name} (@{username}):")
+        try:
+            count = await sync_dm(
+                client=client,
+                storage=storage,
+                channel_id=channel_id,
+                user_id=user_id,
+                username=username,
+                display_name=display_name,
+                avatar=avatar,
+                days=days,
+                incremental=incremental,
+                limit=limit
+            )
+            total_messages += count
+            if count > 0:
+                synced_count += 1
+        except DiscordClientError as e:
+            print(f"  Error: {e}")
+            continue
+
+    return total_messages, synced_count
 
 
 async def sync_single_server(
@@ -594,6 +732,108 @@ def format_summary(summary: SyncSummary, is_first_sync: bool = False) -> str:
     return "\n".join(lines)
 
 
+async def sync_specific_dm(
+    dm_channel_id: str,
+    days: int,
+    incremental: bool,
+    limit: int = DM_DEFAULT_LIMIT
+) -> None:
+    """Sync a specific DM by channel ID.
+
+    Args:
+        dm_channel_id: DM channel ID to sync
+        days: Days of history to fetch
+        incremental: Whether to do incremental sync
+        limit: Max messages to fetch
+    """
+    client = DiscordUserClient()
+    storage = get_storage()
+
+    try:
+        print(f"Syncing DM channel {dm_channel_id}...")
+
+        # Find the DM info
+        dms = await client.list_dms()
+        dm_info = next((d for d in dms if d["id"] == dm_channel_id), None)
+
+        if not dm_info:
+            print(f"Error: DM channel {dm_channel_id} not found")
+            print("Use 'discord-list --dms' to see available DM channels")
+            sys.exit(1)
+
+        user_id = dm_info["user_id"]
+        username = dm_info.get("username", "unknown")
+        display_name = dm_info.get("display_name", username)
+        avatar = dm_info.get("avatar")
+
+        print(f"DM with {display_name} (@{username}):")
+
+        count = await sync_dm(
+            client=client,
+            storage=storage,
+            channel_id=dm_channel_id,
+            user_id=user_id,
+            username=username,
+            display_name=display_name,
+            avatar=avatar,
+            days=days,
+            incremental=incremental,
+            limit=limit
+        )
+
+        # Update DM manifest
+        dm_manifest = storage.update_dm_manifest()
+
+        print(f"\n{'='*50}")
+        print(f"DM Sync Complete!")
+        print(f"Total messages: {count}")
+        print(f"DM manifest: {dm_manifest['summary']['total_users']} users, "
+              f"{dm_manifest['summary']['total_messages']} messages")
+
+    finally:
+        await client.close()
+
+
+async def sync_dms_standalone(
+    days: int,
+    incremental: bool,
+    limit: int = DM_DEFAULT_LIMIT
+) -> None:
+    """Sync all DMs as a standalone operation.
+
+    Args:
+        days: Days of history to fetch
+        incremental: Whether to do incremental sync
+        limit: Max messages per DM
+    """
+    client = DiscordUserClient()
+    storage = get_storage()
+
+    try:
+        print(f"\n{'='*50}")
+        print("Syncing DMs...")
+
+        total_messages, dm_count = await sync_all_dms(
+            client=client,
+            storage=storage,
+            days=days,
+            incremental=incremental,
+            limit=limit
+        )
+
+        # Update DM manifest
+        dm_manifest = storage.update_dm_manifest()
+
+        print(f"\n{'='*50}")
+        print(f"DM Sync Complete!")
+        print(f"Total: {total_messages} messages from {dm_count} DM(s)")
+        print(f"DM manifest: {dm_manifest['summary']['total_users']} users, "
+              f"{dm_manifest['summary']['total_messages']} messages")
+
+    finally:
+        await client.close()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Sync Discord messages to local storage"
@@ -649,6 +889,27 @@ def main():
         help="Use parallel channel syncing (default: True)"
     )
 
+    # DM-specific arguments
+    parser.add_argument(
+        "--dm",
+        metavar="CHANNEL_ID",
+        dest="dm_channel_id",
+        help="Sync a specific DM by channel ID (use discord-list --dms to find IDs)"
+    )
+    parser.add_argument(
+        "--no-dms",
+        action="store_true",
+        dest="no_dms",
+        help="Exclude DMs from sync (servers only)"
+    )
+    parser.add_argument(
+        "--dm-limit",
+        type=int,
+        default=DM_DEFAULT_LIMIT,
+        dest="dm_limit",
+        help=f"Max messages per DM (default: {DM_DEFAULT_LIMIT})"
+    )
+
     args = parser.parse_args()
 
     # Parse --since date if provided
@@ -665,7 +926,16 @@ def main():
         config = get_config()
         server_id = args.server or config.server_id
 
-        if server_id:
+        # Mode 1: Sync specific DM only
+        if args.dm_channel_id:
+            asyncio.run(sync_specific_dm(
+                dm_channel_id=args.dm_channel_id,
+                days=args.days,
+                incremental=not args.full,
+                limit=args.dm_limit
+            ))
+        # Mode 2: Sync specific server (with optional DMs)
+        elif server_id:
             # Sync specific server
             asyncio.run(sync_server(
                 server_id=server_id,
@@ -678,6 +948,14 @@ def main():
                 since_date=since_date,
                 use_parallel=args.parallel
             ))
+            # Also sync DMs unless --no-dms
+            if not args.no_dms:
+                asyncio.run(sync_dms_standalone(
+                    days=args.days,
+                    incremental=not args.full,
+                    limit=args.dm_limit
+                ))
+        # Mode 3: Sync ALL servers + DMs
         else:
             # Sync ALL servers
             asyncio.run(sync_all_servers(
@@ -689,6 +967,13 @@ def main():
                 since_date=since_date,
                 use_parallel=args.parallel
             ))
+            # Also sync DMs unless --no-dms
+            if not args.no_dms:
+                asyncio.run(sync_dms_standalone(
+                    days=args.days,
+                    incremental=not args.full,
+                    limit=args.dm_limit
+                ))
 
     except ConfigError as e:
         print(f"Configuration Error: {e}", file=sys.stderr)

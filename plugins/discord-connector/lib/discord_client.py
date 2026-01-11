@@ -285,6 +285,89 @@ class DiscordUserClient:
         message = await channel.send(content, reference=reference)
         return self._message_to_dict(message)
 
+    # === DM Methods ===
+
+    async def list_dms(self) -> List[dict]:
+        """List all accessible DM channels.
+
+        Returns:
+            List of DM info dicts with id, type, recipient info
+        """
+        bot = await self._ensure_connected()
+
+        dms = []
+        for channel in bot.private_channels:
+            if isinstance(channel, discord.DMChannel):
+                recipient = channel.recipient
+                if recipient:
+                    dms.append({
+                        "id": str(channel.id),
+                        "type": "dm",
+                        "user_id": str(recipient.id),
+                        "username": recipient.name,
+                        "display_name": recipient.display_name,
+                        "avatar": str(recipient.avatar.url) if recipient.avatar else None,
+                    })
+
+        return dms
+
+    async def fetch_dm_messages(
+        self,
+        channel_id: str,
+        after_id: Optional[str] = None,
+        days: int = 7,
+        limit: int = 100
+    ) -> AsyncIterator[dict]:
+        """Fetch messages from a DM channel.
+
+        Args:
+            channel_id: DM channel ID
+            after_id: Only fetch messages after this message ID
+            days: Number of days of history to fetch (if no after_id)
+            limit: Maximum number of messages to fetch (default: 100 for privacy)
+
+        Yields:
+            Message dicts with full metadata
+        """
+        bot = await self._ensure_connected()
+
+        channel = bot.get_channel(int(channel_id))
+        if channel is None:
+            # Try to fetch from private_channels
+            for pc in bot.private_channels:
+                if str(pc.id) == channel_id:
+                    channel = pc
+                    break
+
+        if channel is None:
+            raise DiscordClientError(f"DM channel {channel_id} not found")
+
+        if not isinstance(channel, discord.DMChannel):
+            raise DiscordClientError(f"Channel {channel_id} is not a DM channel")
+
+        # Determine fetch parameters
+        after = None
+        if after_id:
+            after = discord.Object(id=int(after_id))
+        else:
+            # Fetch from N days ago
+            after_time = datetime.now(timezone.utc) - timedelta(days=days)
+            after = discord.Object(
+                id=int((after_time.timestamp() * 1000 - 1420070400000) * 4194304)
+            )
+
+        count = 0
+        async for message in channel.history(
+            limit=limit,
+            after=after,
+            oldest_first=True
+        ):
+            yield self._message_to_dict(message)
+            count += 1
+
+            if count >= limit:
+                break
+
     def _message_to_dict(self, message: discord.Message) -> dict:
         """Convert a discord.Message to a dict with all metadata."""
         # Extract reply info

@@ -142,8 +142,11 @@ class TelegramUserClient:
             return "supergroup"
         return "unknown"
 
-    async def list_dialogs(self) -> List[dict]:
-        """List all accessible groups/channels/chats.
+    async def list_dialogs(self, include_dms: bool = True) -> List[dict]:
+        """List all accessible groups/channels/chats and optionally DMs.
+
+        Args:
+            include_dms: Include private chats (DMs) in listing. Default: True.
 
         Returns:
             List of GroupInfo dicts with id, name, type, member_count.
@@ -159,25 +162,38 @@ class TelegramUserClient:
         async for dialog in self._client.iter_dialogs():
             entity = dialog.entity
 
-            # Skip private chats for now (can be enabled later)
+            # Skip private chats if include_dms is False
             if isinstance(entity, User):
-                continue
+                if not include_dms:
+                    continue
 
             entity_type = self._get_entity_type(entity)
 
-            # Get member count (may require additional API call for some entities)
-            member_count = 0
-            if hasattr(entity, "participants_count"):
-                member_count = entity.participants_count or 0
-
-            # Check for forum topics (supergroups only)
-            has_topics = False
-            if isinstance(entity, Channel) and hasattr(entity, "forum"):
-                has_topics = entity.forum or False
+            # Get entity name (different for users vs groups)
+            if isinstance(entity, User):
+                # DMs: use first_name + last_name
+                name = entity.first_name or ""
+                if entity.last_name:
+                    name = f"{name} {entity.last_name}".strip()
+                if not name:
+                    name = str(entity.id)
+                member_count = 0  # DMs don't have member count
+                has_topics = False  # DMs don't have topics
+            else:
+                # Groups/channels: use title
+                name = getattr(entity, "title", str(entity.id))
+                # Get member count (may require additional API call for some entities)
+                member_count = 0
+                if hasattr(entity, "participants_count"):
+                    member_count = entity.participants_count or 0
+                # Check for forum topics (supergroups only)
+                has_topics = False
+                if isinstance(entity, Channel) and hasattr(entity, "forum"):
+                    has_topics = entity.forum or False
 
             groups.append({
                 "id": entity.id,
-                "name": getattr(entity, "title", str(entity.id)),
+                "name": name,
                 "type": entity_type,
                 "username": getattr(entity, "username", None),
                 "member_count": member_count,

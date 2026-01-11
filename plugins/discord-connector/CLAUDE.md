@@ -37,6 +37,8 @@ The plugin code lives elsewhere and is referenced via `--plugin-dir`.
 
 **All paths are relative to cwd (current working directory), NOT the plugin directory:**
 
+### Server Data
+
 **Manifest (index of all synced data):**
 ```
 data/manifest.yaml
@@ -56,6 +58,24 @@ data/{server_id}/sync_state.yaml
 ```
 data/{server_id}/server.yaml
 data/{server_id}/{channel_name}/channel.yaml
+```
+
+### DM Data
+
+**DM Manifest:**
+```
+dms/discord/manifest.yaml
+```
+
+**DM Messages:**
+```
+dms/discord/{user_id}-{username}/messages.md
+```
+
+**DM Metadata:**
+```
+dms/discord/{user_id}-{username}/user.yaml
+dms/discord/{user_id}-{username}/sync_state.yaml
 ```
 
 ## Message Format
