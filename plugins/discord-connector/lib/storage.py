@@ -714,13 +714,36 @@ class Storage:
         # Sort servers by total messages (most active first)
         servers.sort(key=lambda s: s.get("total_messages", 0), reverse=True)
 
+        # Calculate overall date coverage across all servers
+        overall_oldest = None
+        overall_newest = None
+        for s in servers:
+            dr = s.get("date_range", {})
+            if dr.get("first_message"):
+                s_oldest = date.fromisoformat(dr["first_message"])
+                if overall_oldest is None or s_oldest < overall_oldest:
+                    overall_oldest = s_oldest
+            if dr.get("last_message"):
+                s_newest = date.fromisoformat(dr["last_message"])
+                if overall_newest is None or s_newest > overall_newest:
+                    overall_newest = s_newest
+
+        overall_days = 0
+        if overall_oldest and overall_newest:
+            overall_days = (overall_newest - overall_oldest).days + 1
+
         # Build manifest
         manifest = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "summary": {
                 "total_servers": len(servers),
                 "total_channels": total_channels,
-                "total_messages": total_messages
+                "total_messages": total_messages,
+                "date_coverage": {
+                    "oldest_message": overall_oldest.isoformat() if overall_oldest else None,
+                    "newest_message": overall_newest.isoformat() if overall_newest else None,
+                    "total_days": overall_days
+                }
             },
             "servers": servers
         }

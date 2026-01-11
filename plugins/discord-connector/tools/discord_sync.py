@@ -178,13 +178,33 @@ async def sync_single_server(
                 max_messages=max_messages
             )
             total_messages += count
-        except (DiscordClientError, discord.Forbidden, discord.HTTPException) as e:
+        except discord.Forbidden as e:
+            print(f"Access denied (403)")
+            print(f"    Possible causes:")
+            print(f"    - You don't have 'Read Message History' permission")
+            print(f"    - This is a private channel you're not a member of")
+            print(f"    - The channel requires specific roles to view")
+            print(f"    Fix: Request access or remove from sync config")
+            failed_channels.append({"name": channel['name'], "error": "access_denied"})
+            continue
+        except discord.HTTPException as e:
+            if e.status == 429:
+                print(f"Rate limited - retry after {getattr(e, 'retry_after', 'unknown')}s")
+            else:
+                print(f"HTTP error {e.status}: {e.text}")
+            failed_channels.append({"name": channel['name'], "error": f"http_{e.status}"})
+            continue
+        except DiscordClientError as e:
             print(f"Error: {e}")
-            failed_channels.append(channel['name'])
+            failed_channels.append({"name": channel['name'], "error": str(e)})
             continue
 
     if failed_channels:
         print(f"  Warning: {len(failed_channels)} channel(s) failed")
+        print(f"  Failed channels:")
+        for fc in failed_channels:
+            name = fc["name"] if isinstance(fc, dict) else fc
+            print(f"    - #{name}")
 
     return total_messages
 
@@ -454,16 +474,31 @@ async def sync_server(
                         max_messages=effective_limit
                     )
                     total_messages += count
-                except (DiscordClientError, discord.Forbidden, discord.HTTPException) as e:
+                except discord.Forbidden as e:
+                    print(f"  Access denied (403)")
+                    print(f"    - You may not have 'Read Message History' permission")
+                    print(f"    - Request access or remove this channel from config")
+                    failed_channels.append({"name": channel['name'], "error": "access_denied"})
+                    continue
+                except discord.HTTPException as e:
+                    if e.status == 429:
+                        print(f"  Rate limited - retry after {getattr(e, 'retry_after', 'unknown')}s")
+                    else:
+                        print(f"  HTTP error {e.status}: {e.text}")
+                    failed_channels.append({"name": channel['name'], "error": f"http_{e.status}"})
+                    continue
+                except DiscordClientError as e:
                     print(f"  Error: {e}")
-                    failed_channels.append(channel['name'])
+                    failed_channels.append({"name": channel['name'], "error": str(e)})
                     continue
 
             # Report failed channels if any
             if failed_channels:
                 print(f"\nWarning: {len(failed_channels)} channel(s) failed to sync:")
-                for ch in failed_channels:
-                    print(f"  - #{ch}")
+                for fc in failed_channels:
+                    name = fc["name"] if isinstance(fc, dict) else fc
+                    error = fc.get("error", "unknown") if isinstance(fc, dict) else "unknown"
+                    print(f"  - #{name} ({error})")
 
             # Update manifest with all synced data
             manifest = storage.update_manifest()

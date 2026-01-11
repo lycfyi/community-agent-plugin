@@ -64,9 +64,19 @@ async def sync_group(
     """
     storage = get_storage()
 
-    # Get group info
+    # Get entity type from dialogs first (more reliable entity resolution)
     print(f"Fetching group info...")
-    group = await client.get_group(group_id)
+    entity_type = None
+    try:
+        dialogs = await client.list_dialogs()
+        for g in dialogs:
+            if abs(g["id"]) == abs(group_id):
+                entity_type = g["type"]
+                break
+    except Exception:
+        pass  # Fall back to get_group without type hint
+
+    group = await client.get_group(group_id, entity_type=entity_type)
     group_name = group["name"]
     group_type = group["type"]
     has_topics = group.get("has_topics", False)
@@ -267,9 +277,38 @@ async def main(args: argparse.Namespace) -> int:
     if not group_id:
         group_id = config.default_group_id
         if not group_id:
-            print("No group specified and no default group configured.", file=sys.stderr)
-            print("Use --group GROUP_ID or run 'telegram-init --group GROUP_ID'", file=sys.stderr)
-            return 2
+            # Try to auto-select or show available groups
+            print("No default group configured. Fetching available groups...", file=sys.stderr)
+
+            try:
+                client = TelegramUserClient()
+                await client.connect()
+                groups = await client.list_dialogs()
+                await client.disconnect()
+
+                if len(groups) == 0:
+                    print("No accessible groups found.", file=sys.stderr)
+                    return 2
+                elif len(groups) == 1:
+                    group_id = groups[0]["id"]
+                    print(f"Auto-selected only available group: {groups[0]['name']}", file=sys.stderr)
+                else:
+                    print(f"\nFound {len(groups)} accessible groups:", file=sys.stderr)
+                    for i, g in enumerate(groups[:15], 1):
+                        gtype = g.get("type", "unknown")
+                        members = g.get("member_count", 0)
+                        print(f"  {i:2}. {g['name'][:40]:<40} (ID: {g['id']}, {gtype}, {members} members)", file=sys.stderr)
+                    if len(groups) > 15:
+                        print(f"  ... and {len(groups) - 15} more", file=sys.stderr)
+                    print(f"\nTo sync a specific group:", file=sys.stderr)
+                    print(f"  telegram-sync --group GROUP_ID", file=sys.stderr)
+                    print(f"\nTo set a default group:", file=sys.stderr)
+                    print(f"  telegram-init --group GROUP_ID", file=sys.stderr)
+                    return 2
+            except Exception as e:
+                print(f"Failed to list groups: {e}", file=sys.stderr)
+                print("Use --group GROUP_ID or run 'telegram-init --group GROUP_ID'", file=sys.stderr)
+                return 2
 
     group_id = int(group_id)
 

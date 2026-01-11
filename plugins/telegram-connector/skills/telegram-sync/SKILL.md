@@ -118,6 +118,79 @@ Reactions: heart 5 | thumbsup 3
 - `2` - Group not found or permission denied
 - `3` - Rate limited
 
+## Troubleshooting
+
+### "Could not find the input entity" Error
+
+**Error message:**
+```
+Could not find the input entity for PeerUser(user_id=...) (PeerUser)
+```
+
+**What this means:** Telethon (the Telegram library) doesn't have this group cached locally. It needs to know the group's "access hash" which is typically cached when you interact with the group.
+
+**Solutions (try in order):**
+
+1. **Run telegram-list first** to refresh the entity cache:
+   ```bash
+   python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_list.py
+   ```
+   This iterates through all your dialogs and caches the entities.
+
+2. **Use the exact ID from telegram-list output:**
+   ```bash
+   # First, list groups to get correct IDs
+   python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_list.py
+
+   # Then sync using the ID shown
+   python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --group <ID_FROM_LIST>
+   ```
+
+3. **Open the group in Telegram app:**
+   - Open the Telegram desktop or mobile app
+   - Navigate to the group you want to sync
+   - Send a message or just open the chat
+   - This forces Telegram to cache the entity
+   - Then retry the sync
+
+4. **For supergroups/channels:** Make sure you're using the correct ID format. Supergroup IDs are typically positive integers (not negative).
+
+### "No group specified" Error
+
+**Error message:**
+```
+No group specified and no default group configured.
+```
+
+**Solution:** Either specify a group ID or set a default:
+
+```bash
+# Option 1: Specify group directly
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_sync.py --group 1234567890
+
+# Option 2: Set a default group
+python ${CLAUDE_PLUGIN_ROOT}/tools/telegram_init.py --group 1234567890
+```
+
+### Permission Denied (Exit Code 2)
+
+**Possible causes:**
+- You're not a member of the group
+- The group is private
+- You've been banned from the group
+- Admin permissions are required
+
+**Solution:** Check your membership status in the Telegram app.
+
+### Rate Limited (Exit Code 3)
+
+**Error message:**
+```
+Rate limited: Wait X seconds.
+```
+
+**Solution:** Wait the specified time before retrying. Telegram rate limits are strict and cannot be bypassed.
+
 ## Related Skills
 
 - `telegram-init` - Initialize Telegram connection

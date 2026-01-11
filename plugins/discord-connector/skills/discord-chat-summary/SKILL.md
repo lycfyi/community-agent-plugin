@@ -63,7 +63,28 @@ This shows all synced servers, channels, message counts, and last sync times.
 
 **CRITICAL PATH RESOLUTION:** All data paths shown in the manifest are relative to the **current working directory** (cwd) where Claude is running - NOT relative to this skill file or the plugin directory.
 
-### Step 2: Determine Scope
+### Step 2: Display Data Coverage (REQUIRED)
+
+**Before generating any summary, ALWAYS show the date coverage to the user.**
+
+Extract and display this information from the manifest:
+
+```
+Data Coverage:
+- Server: [ServerName] - [first_message] to [last_message] ([days_covered] days)
+  - #channel1: [message_count] messages
+  - #channel2: [message_count] messages
+```
+
+Get this from manifest fields:
+- `servers[].date_range.first_message` - oldest message date
+- `servers[].date_range.last_message` - newest message date
+- `servers[].date_range.days_covered` - total days of data
+- `servers[].channels[].message_count` - messages per channel
+
+**This step is NOT optional.** Users must see what date range they're getting before the summary.
+
+### Step 3: Determine Scope
 
 Ask user or infer from their request which scope to summarize:
 
@@ -73,7 +94,7 @@ Ask user or infer from their request which scope to summarize:
 | Specific server | Summarize all channels in one server |
 | Specific channel | Summarize a single channel |
 
-### Step 3: Read Messages
+### Step 4: Read Messages
 
 Read the relevant `messages.md` files based on scope:
 
@@ -92,9 +113,11 @@ Read: ./data/662267976984297473-midjourney/*/messages.md
 Read: ./data/{server-dir}/{channel-name}/messages.md
 ```
 
-### Step 4: Apply Time Filtering (Optional)
+### Step 5: Apply Time Filtering
 
-If user specifies a time range, filter messages by date headers in the markdown:
+If user specifies a time range, filter messages by date headers in the markdown.
+
+**IMPORTANT:** When filtering, tell the user what filter you applied:
 
 | User Request | Filter Logic |
 |--------------|--------------|
@@ -105,17 +128,44 @@ If user specifies a time range, filter messages by date headers in the markdown:
 
 Date headers in messages.md look like: `## 2026-01-03`
 
-### Step 5: Generate Summary
+Example filter output: "Filtering to last 7 days (Jan 3-10, 2026)"
 
-Produce a summary including:
+### Step 6: Generate Summary (REQUIRED FORMAT)
 
-- **Key topics**: Main subjects discussed
-- **Active participants**: Most active users (by message count)
-- **Notable discussions**: Important conversations or decisions
-- **Questions asked**: Unanswered questions if relevant
-- **Sentiment**: Overall tone (helpful, heated, casual, etc.)
+**All summaries MUST include a date range header. Never produce a summary without showing the period covered.**
 
-### Step 6: Update User Profile
+**Required Summary Format:**
+
+```markdown
+## [Server Name] Summary
+**Period:** [start_date] to [end_date] ([N] days)
+**Messages:** [count] | **Channels:** [count] | **Active Users:** [count]
+
+---
+
+### Key Topics
+| Date | Topic | Channel |
+|------|-------|---------|
+| Jan 9 | [Topic description] | #channel |
+| Jan 8 | [Topic description] | #channel |
+
+### Notable Discussions
+- **[Topic]** (Jan 9, #channel): [Brief description of the discussion]
+- **[Topic]** (Jan 8, #channel): [Brief description]
+
+### Active Participants
+@user1 (45 msgs), @user2 (32 msgs), @user3 (28 msgs)
+
+### Unanswered Questions
+- "[Question text]?" (@user, Jan 8, #channel)
+```
+
+**Key requirements:**
+- Period/date range MUST be in the header
+- Topics should include the date they were discussed
+- Include channel context for multi-channel summaries
+
+### Step 7: Update User Profile
 
 After generating the summary, update the user profile to track engagement and learn interests:
 

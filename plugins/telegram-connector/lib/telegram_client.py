@@ -186,11 +186,37 @@ class TelegramUserClient:
 
         return groups
 
-    async def get_group(self, group_id: int) -> dict:
+    async def _resolve_entity_from_dialogs(self, entity_id: int):
+        """Try to resolve entity by scanning dialogs.
+
+        This is more reliable than get_entity() for groups/channels
+        because iter_dialogs() properly resolves all entity types.
+
+        Args:
+            entity_id: The entity ID to find (can be positive or negative)
+
+        Returns:
+            The resolved entity, or None if not found
+        """
+        try:
+            # Normalize ID for comparison (some APIs return negative IDs for channels)
+            target_id = abs(entity_id)
+
+            async for dialog in self._client.iter_dialogs():
+                dialog_id = abs(dialog.entity.id)
+                if dialog_id == target_id:
+                    return dialog.entity
+        except Exception:
+            pass
+        return None
+
+    async def get_group(self, group_id: int, entity_type: str = None) -> dict:
         """Get information about a specific group.
 
         Args:
             group_id: Telegram entity ID.
+            entity_type: Optional type hint ('group', 'supergroup', 'channel')
+                        to help resolve the entity correctly.
 
         Returns:
             GroupInfo dict.
@@ -204,7 +230,27 @@ class TelegramUserClient:
         await self._rate_limiter.wait()
 
         try:
-            entity = await self._client.get_entity(group_id)
+            entity = None
+
+            # Strategy 1: If entity_type is known, use proper Peer type
+            if entity_type == "group":
+                try:
+                    entity = await self._client.get_entity(PeerChat(abs(group_id)))
+                except Exception:
+                    pass
+            elif entity_type in ("supergroup", "channel"):
+                try:
+                    entity = await self._client.get_entity(PeerChannel(abs(group_id)))
+                except Exception:
+                    pass
+
+            # Strategy 2: Try to resolve from dialog cache (most reliable)
+            if not entity:
+                entity = await self._resolve_entity_from_dialogs(group_id)
+
+            # Strategy 3: Fallback to raw get_entity (may fail for uncached entities)
+            if not entity:
+                entity = await self._client.get_entity(group_id)
 
             entity_type = self._get_entity_type(entity)
             member_count = 0
