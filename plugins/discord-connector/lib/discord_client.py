@@ -176,8 +176,15 @@ class DiscordUserClient:
         if channel is None:
             return False, f"Channel {channel_id} not found"
 
-        # Get the guild for the channel
+        # Handle DM channels - no guild permission check needed
         if not hasattr(channel, 'guild') or channel.guild is None:
+            # Check if it's a DM channel (has recipient attribute)
+            if hasattr(channel, 'recipient') or hasattr(channel, 'recipients'):
+                # DM or group DM - we can always send if channel exists
+                recipient_name = getattr(channel, 'recipient', None)
+                if recipient_name:
+                    return True, f"OK - can send DM to {recipient_name}"
+                return True, "OK - can send to DM channel"
             return False, "Could not determine channel's server"
 
         guild = channel.guild
