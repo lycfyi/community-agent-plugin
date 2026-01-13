@@ -15,8 +15,12 @@ from typing import Optional
 from community_agent.lib.config import (
     CommunityConfig,
     ConfigError,
+    SetupError,
+    SetupState,
     get_config as get_community_config,
     reload_config as reload_community_config,
+    is_first_run as community_is_first_run,
+    get_setup_state as community_get_setup_state,
 )
 
 
@@ -97,6 +101,22 @@ class Config:
             group_id, group_name
         )
 
+    def is_first_run(self) -> bool:
+        """Check if this is a first-time setup."""
+        return self._community_config.is_first_run()
+
+    def get_setup_state(self) -> SetupState:
+        """Get detailed setup state for onboarding."""
+        return self._community_config.get_setup_state()
+
+    def mark_setup_complete(self, mode: str = "quickstart", version: str = "1.0.0") -> None:
+        """Mark Telegram setup as complete."""
+        self._community_config.mark_setup_complete(mode, version)
+
+    def has_telegram_credentials(self) -> bool:
+        """Check if Telegram credentials are set (without throwing)."""
+        return self._community_config.has_telegram_credentials()
+
 
 # Global config instance
 _config: Optional[Config] = None
@@ -118,5 +138,12 @@ def reload_config() -> Config:
     return _config
 
 
-# Re-export ConfigError for backwards compatibility
-__all__ = ["Config", "ConfigError", "get_config", "reload_config"]
+# Re-export for backwards compatibility and new features
+__all__ = [
+    "Config",
+    "ConfigError",
+    "SetupError",
+    "SetupState",
+    "get_config",
+    "reload_config",
+]
