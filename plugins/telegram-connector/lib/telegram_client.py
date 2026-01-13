@@ -142,8 +142,11 @@ class TelegramUserClient:
             return "supergroup"
         return "unknown"
 
-    async def list_dialogs(self) -> List[dict]:
-        """List all accessible groups/channels/chats.
+    async def list_dialogs(self, include_dms: bool = True) -> List[dict]:
+        """List all accessible groups/channels/chats and optionally DMs.
+
+        Args:
+            include_dms: Include private chats (DMs) in listing. Default: True.
 
         Returns:
             List of GroupInfo dicts with id, name, type, member_count.
@@ -159,25 +162,38 @@ class TelegramUserClient:
         async for dialog in self._client.iter_dialogs():
             entity = dialog.entity
 
-            # Skip private chats for now (can be enabled later)
+            # Skip private chats if include_dms is False
             if isinstance(entity, User):
-                continue
+                if not include_dms:
+                    continue
 
             entity_type = self._get_entity_type(entity)
 
-            # Get member count (may require additional API call for some entities)
-            member_count = 0
-            if hasattr(entity, "participants_count"):
-                member_count = entity.participants_count or 0
-
-            # Check for forum topics (supergroups only)
-            has_topics = False
-            if isinstance(entity, Channel) and hasattr(entity, "forum"):
-                has_topics = entity.forum or False
+            # Get entity name (different for users vs groups)
+            if isinstance(entity, User):
+                # DMs: use first_name + last_name
+                name = entity.first_name or ""
+                if entity.last_name:
+                    name = f"{name} {entity.last_name}".strip()
+                if not name:
+                    name = str(entity.id)
+                member_count = 0  # DMs don't have member count
+                has_topics = False  # DMs don't have topics
+            else:
+                # Groups/channels: use title
+                name = getattr(entity, "title", str(entity.id))
+                # Get member count (may require additional API call for some entities)
+                member_count = 0
+                if hasattr(entity, "participants_count"):
+                    member_count = entity.participants_count or 0
+                # Check for forum topics (supergroups only)
+                has_topics = False
+                if isinstance(entity, Channel) and hasattr(entity, "forum"):
+                    has_topics = entity.forum or False
 
             groups.append({
                 "id": entity.id,
-                "name": getattr(entity, "title", str(entity.id)),
+                "name": name,
                 "type": entity_type,
                 "username": getattr(entity, "username", None),
                 "member_count": member_count,
@@ -186,11 +202,37 @@ class TelegramUserClient:
 
         return groups
 
-    async def get_group(self, group_id: int) -> dict:
+    async def _resolve_entity_from_dialogs(self, entity_id: int):
+        """Try to resolve entity by scanning dialogs.
+
+        This is more reliable than get_entity() for groups/channels
+        because iter_dialogs() properly resolves all entity types.
+
+        Args:
+            entity_id: The entity ID to find (can be positive or negative)
+
+        Returns:
+            The resolved entity, or None if not found
+        """
+        try:
+            # Normalize ID for comparison (some APIs return negative IDs for channels)
+            target_id = abs(entity_id)
+
+            async for dialog in self._client.iter_dialogs():
+                dialog_id = abs(dialog.entity.id)
+                if dialog_id == target_id:
+                    return dialog.entity
+        except Exception:
+            pass
+        return None
+
+    async def get_group(self, group_id: int, entity_type: str = None) -> dict:
         """Get information about a specific group.
 
         Args:
             group_id: Telegram entity ID.
+            entity_type: Optional type hint ('group', 'supergroup', 'channel')
+                        to help resolve the entity correctly.
 
         Returns:
             GroupInfo dict.
@@ -204,7 +246,27 @@ class TelegramUserClient:
         await self._rate_limiter.wait()
 
         try:
-            entity = await self._client.get_entity(group_id)
+            entity = None
+
+            # Strategy 1: If entity_type is known, use proper Peer type
+            if entity_type == "group":
+                try:
+                    entity = await self._client.get_entity(PeerChat(abs(group_id)))
+                except Exception:
+                    pass
+            elif entity_type in ("supergroup", "channel"):
+                try:
+                    entity = await self._client.get_entity(PeerChannel(abs(group_id)))
+                except Exception:
+                    pass
+
+            # Strategy 2: Try to resolve from dialog cache (most reliable)
+            if not entity:
+                entity = await self._resolve_entity_from_dialogs(group_id)
+
+            # Strategy 3: Fallback to raw get_entity (may fail for uncached entities)
+            if not entity:
+                entity = await self._client.get_entity(group_id)
 
             entity_type = self._get_entity_type(entity)
             member_count = 0

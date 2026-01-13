@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Send message to Telegram.
+"""Send message to Telegram group or DM.
 
 Usage:
     python telegram_send.py --group GROUP_ID --message "content" [--reply-to MSG_ID]
+    python telegram_send.py --dm USER_ID --message "content" [--reply-to MSG_ID]
 
 Options:
     --group GROUP_ID    Target group ID
+    --dm USER_ID        Target user ID for direct message
     --message TEXT      Message content
     --reply-to MSG_ID   Reply to specific message
-    --topic TOPIC_ID    Send to specific topic
+    --topic TOPIC_ID    Send to specific topic (groups only)
     --confirm           Skip confirmation prompt
 
 Output:
@@ -83,6 +85,49 @@ async def send_message(
     return result
 
 
+async def send_dm(
+    client: TelegramUserClient,
+    user_id: int,
+    message: str,
+    reply_to: int | None = None,
+) -> dict:
+    """Send a DM to a user.
+
+    Args:
+        client: Connected Telegram client
+        user_id: Target user ID
+        message: Message content
+        reply_to: Message ID to reply to
+
+    Returns:
+        Sent message info
+    """
+    # Get user info from dialogs for display
+    dialogs = await client.list_dialogs(include_dms=True)
+    user_info = next((d for d in dialogs if d["id"] == user_id and d["type"] == "private"), None)
+
+    if user_info:
+        user_name = user_info["name"]
+        username = user_info.get("username")
+        display = f"{user_name} (@{username})" if username else user_name
+    else:
+        display = str(user_id)
+
+    print(f"Sending DM to: {display}")
+    if reply_to:
+        print(f"Reply to: {reply_to}")
+    print()
+
+    # Send message - Telethon's send_message works with user IDs too
+    result = await client.send_message(
+        group_id=user_id,  # Works for any entity including users
+        content=message,
+        reply_to_id=reply_to,
+    )
+
+    return result
+
+
 async def main(args: argparse.Namespace) -> int:
     """Main entry point.
 
@@ -105,16 +150,24 @@ async def main(args: argparse.Namespace) -> int:
         print(f"Configuration error: {e}", file=sys.stderr)
         return 2
 
-    # Determine which group to send to
-    group_id = args.group
-    if not group_id:
-        group_id = config.default_group_id
-        if not group_id:
-            print("No group specified and no default group configured.", file=sys.stderr)
-            print("Use --group GROUP_ID or run 'telegram-init --group GROUP_ID'", file=sys.stderr)
-            return 2
+    # Determine if sending DM or to group
+    is_dm = args.dm_user_id is not None
 
-    group_id = int(group_id)
+    if is_dm:
+        # DM mode
+        entity_id = int(args.dm_user_id)
+        if args.topic:
+            print("Warning: --topic is ignored for DMs", file=sys.stderr)
+    else:
+        # Group mode - determine which group to send to
+        group_id = args.group
+        if not group_id:
+            group_id = config.default_group_id
+            if not group_id:
+                print("No group specified and no default group configured.", file=sys.stderr)
+                print("Use --group GROUP_ID or --dm USER_ID", file=sys.stderr)
+                return 2
+        entity_id = int(group_id)
 
     # Validate message
     message = args.message
@@ -143,13 +196,21 @@ async def main(args: argparse.Namespace) -> int:
     try:
         await client.connect()
 
-        result = await send_message(
-            client=client,
-            group_id=group_id,
-            message=message,
-            reply_to=int(args.reply_to) if args.reply_to else None,
-            topic_id=int(args.topic) if args.topic else None,
-        )
+        if is_dm:
+            result = await send_dm(
+                client=client,
+                user_id=entity_id,
+                message=message,
+                reply_to=int(args.reply_to) if args.reply_to else None,
+            )
+        else:
+            result = await send_message(
+                client=client,
+                group_id=entity_id,
+                message=message,
+                reply_to=int(args.reply_to) if args.reply_to else None,
+                topic_id=int(args.topic) if args.topic else None,
+            )
 
         print("=" * 40)
         print("Message sent successfully!")
@@ -182,14 +243,24 @@ async def main(args: argparse.Namespace) -> int:
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Send message to Telegram",
+        description="Send message to Telegram group or DM",
         epilog="WARNING: Using a user token may violate Telegram's ToS."
     )
-    parser.add_argument(
+
+    # Target: group or DM (mutually exclusive but both optional for default group)
+    target = parser.add_mutually_exclusive_group()
+    target.add_argument(
         "--group",
         type=str,
         help="Target group ID (uses default if not specified)"
     )
+    target.add_argument(
+        "--dm",
+        type=str,
+        dest="dm_user_id",
+        help="Target user ID for direct message"
+    )
+
     parser.add_argument(
         "--message", "-m",
         type=str,
@@ -204,7 +275,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--topic",
         type=str,
-        help="Topic ID for forum groups"
+        help="Topic ID for forum groups (ignored for DMs)"
     )
     parser.add_argument(
         "--confirm",

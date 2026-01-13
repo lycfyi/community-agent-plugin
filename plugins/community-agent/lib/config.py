@@ -63,7 +63,10 @@ class CommunityConfig:
             config_dir: Directory containing config files. Defaults to ./config
             env_file: Path to .env file. Defaults to ./.env
         """
-        self._base_dir = Path.cwd()
+        # Use CLAUDE_LOCAL_DIR if available (set by Claude Code to user's working dir)
+        # Fall back to cwd for standalone usage
+        local_dir = os.getenv("CLAUDE_LOCAL_DIR")
+        self._base_dir = Path(local_dir) if local_dir else Path.cwd()
         self._config_dir = config_dir or self._base_dir / "config"
         self._env_file = env_file or self._base_dir / ".env"
 

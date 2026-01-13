@@ -74,13 +74,54 @@ python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --days 7
 python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --full
 ```
 
+### Sync DMs
+
+**DMs are included by default.** Use `--no-dms` to sync servers only.
+
+Sync all (servers + DMs):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py
+```
+
+Sync servers only (exclude DMs):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --no-dms
+```
+
+Sync a specific DM by channel ID:
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --dm CHANNEL_ID
+```
+
+Sync DMs with custom message limit (default: 100):
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/discord_sync.py --dm-limit 500
+```
+
+## DM Message Limits
+
+### DM Limit (`--dm-limit`)
+- Default: 100 (privacy-conscious default)
+- Lower than server channel limit by design
+- Increase manually if needed: `--dm-limit 500`
+
+### Server Channel Limit (`--limit`)
+- Default: 200 for quick mode
+- Use config file to set higher limits for full sync
+
 ## Output Location
 
 All paths are relative to cwd (current working directory):
 
+### Server Messages
 Messages saved to: `./data/{server_id}/{channel_name}/messages.md`
 
 Sync state tracked in: `./data/{server_id}/sync_state.yaml`
+
+### DM Messages
+DM messages saved to: `./dms/discord/{user_id}-{username}/messages.md`
+
+DM manifest: `./dms/discord/manifest.yaml`
 
 ## Prerequisites
 

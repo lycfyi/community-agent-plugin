@@ -26,6 +26,10 @@ class SyncMode(Enum):
     GAP_FILL = "gap_fill"  # Fill missing date ranges
 
 
+# Default message limit for DMs (privacy-conscious)
+DM_DEFAULT_LIMIT = 100
+
+
 @dataclass
 class SyncProgress:
     """Real-time progress tracking for sync operations."""
@@ -80,6 +84,8 @@ class Storage:
             config = get_config()
             base_dir = config.data_dir
         self._base_dir = Path(base_dir)
+        # DMs go to a separate root directory
+        self._dm_base_dir = Path(base_dir).parent / "dms" / "discord"
 
     def _ensure_dir(self, path: Path):
         """Ensure a directory exists."""
@@ -714,13 +720,36 @@ class Storage:
         # Sort servers by total messages (most active first)
         servers.sort(key=lambda s: s.get("total_messages", 0), reverse=True)
 
+        # Calculate overall date coverage across all servers
+        overall_oldest = None
+        overall_newest = None
+        for s in servers:
+            dr = s.get("date_range", {})
+            if dr.get("first_message"):
+                s_oldest = date.fromisoformat(dr["first_message"])
+                if overall_oldest is None or s_oldest < overall_oldest:
+                    overall_oldest = s_oldest
+            if dr.get("last_message"):
+                s_newest = date.fromisoformat(dr["last_message"])
+                if overall_newest is None or s_newest > overall_newest:
+                    overall_newest = s_newest
+
+        overall_days = 0
+        if overall_oldest and overall_newest:
+            overall_days = (overall_newest - overall_oldest).days + 1
+
         # Build manifest
         manifest = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "summary": {
                 "total_servers": len(servers),
                 "total_channels": total_channels,
-                "total_messages": total_messages
+                "total_messages": total_messages,
+                "date_coverage": {
+                    "oldest_message": overall_oldest.isoformat() if overall_oldest else None,
+                    "newest_message": overall_newest.isoformat() if overall_newest else None,
+                    "total_days": overall_days
+                }
             },
             "servers": servers
         }
@@ -743,6 +772,261 @@ class Storage:
 
         with open(manifest_path, "r") as f:
             return yaml.safe_load(f) or {}
+
+    # === DM Storage ===
+
+    def _get_dm_dir(self, user_id: str, username: Optional[str] = None) -> Path:
+        """Get DM directory path with human-readable slug.
+
+        Format: {user_id}-{slug}
+        Example: 123456789-alice
+
+        Args:
+            user_id: Discord user ID
+            username: Optional username for slug
+
+        Returns:
+            Path to DM directory
+        """
+        # Try to find existing directory first
+        for existing in self._dm_base_dir.glob(f"{user_id}*"):
+            if existing.is_dir():
+                return existing
+
+        # Build new directory name with slug
+        if username:
+            slug = self._slugify(username)
+            return self._dm_base_dir / f"{user_id}-{slug}"
+
+        # Fallback to just user_id
+        return self._dm_base_dir / str(user_id)
+
+    def save_dm_metadata(
+        self,
+        user_id: str,
+        username: str,
+        display_name: str,
+        avatar: Optional[str] = None
+    ) -> None:
+        """Save DM user metadata YAML file.
+
+        Args:
+            user_id: Discord user ID
+            username: Username
+            display_name: Display name
+            avatar: Avatar URL
+        """
+        dm_dir = self._get_dm_dir(user_id, username)
+        self._ensure_dir(dm_dir)
+
+        metadata = {
+            "id": user_id,
+            "username": username,
+            "display_name": display_name,
+            "avatar": avatar,
+            "synced_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        with open(dm_dir / "user.yaml", "w") as f:
+            yaml.safe_dump(metadata, f, default_flow_style=False)
+
+    def get_dm_sync_state(self, user_id: str, username: Optional[str] = None) -> dict:
+        """Get sync state for a DM.
+
+        Args:
+            user_id: Discord user ID
+            username: Optional username for directory lookup
+
+        Returns:
+            Sync state dict, or empty dict if not found
+        """
+        dm_dir = self._get_dm_dir(user_id, username)
+        state_file = dm_dir / "sync_state.yaml"
+        if not state_file.exists():
+            return {}
+
+        with open(state_file, "r") as f:
+            return yaml.safe_load(f) or {}
+
+    def save_dm_sync_state(self, user_id: str, state: dict, username: Optional[str] = None) -> None:
+        """Save sync state for a DM.
+
+        Args:
+            user_id: Discord user ID
+            state: Sync state dict
+            username: Optional username for directory slug
+        """
+        dm_dir = self._get_dm_dir(user_id, username or state.get("username"))
+        self._ensure_dir(dm_dir)
+
+        state_file = dm_dir / "sync_state.yaml"
+        with open(state_file, "w") as f:
+            yaml.safe_dump(state, f, default_flow_style=False)
+
+    def get_dm_last_message_id(self, user_id: str) -> Optional[str]:
+        """Get last synced message ID for DM incremental sync.
+
+        Args:
+            user_id: Discord user ID
+
+        Returns:
+            Last message ID, or None if never synced
+        """
+        state = self.get_dm_sync_state(user_id)
+        return state.get("last_message_id")
+
+    def append_dm_messages(
+        self,
+        user_id: str,
+        username: str,
+        display_name: str,
+        channel_id: str,
+        messages: List[dict]
+    ) -> None:
+        """Append DM messages to storage.
+
+        Args:
+            user_id: Discord user ID
+            username: Username
+            display_name: Display name
+            channel_id: DM channel ID
+            messages: List of message dicts to append
+        """
+        if not messages:
+            return
+
+        dm_dir = self._get_dm_dir(user_id, username)
+        self._ensure_dir(dm_dir)
+
+        messages_file = dm_dir / "messages.md"
+
+        # Group messages by date
+        date_groups = group_messages_by_date(messages)
+
+        # If file doesn't exist, create with header
+        if not messages_file.exists():
+            now = datetime.now(timezone.utc).isoformat()
+
+            header = f"""---
+user_id: {user_id}
+username: {username}
+display_name: {display_name}
+channel_id: {channel_id}
+type: dm
+platform: discord
+last_sync: {now}
+---
+
+# DM with {display_name}
+
+"""
+            with open(messages_file, "w") as f:
+                f.write(header)
+
+        # Build new content to append
+        new_lines = []
+
+        # Sort dates (oldest first for appending)
+        sorted_dates = sorted(date_groups.keys())
+
+        for date_str in sorted_dates:
+            new_lines.append("")
+            new_lines.append(format_date_header(date_str))
+            new_lines.append("")
+
+            # Sort messages by timestamp (oldest first)
+            day_messages = sorted(
+                date_groups[date_str],
+                key=lambda m: m.get("timestamp", "")
+            )
+
+            for msg in day_messages:
+                new_lines.append(format_message(msg))
+                new_lines.append("")
+
+        # Append to file
+        with open(messages_file, "a") as f:
+            f.write("\n".join(new_lines))
+
+        # Update sync state
+        last_msg = messages[-1]
+        state = self.get_dm_sync_state(user_id, username)
+        state["user_id"] = user_id
+        state["username"] = username
+        state["display_name"] = display_name
+        state["channel_id"] = channel_id
+        state["last_message_id"] = last_msg["id"]
+        state["message_count"] = state.get("message_count", 0) + len(messages)
+        state["last_sync"] = datetime.now(timezone.utc).isoformat()
+        self.save_dm_sync_state(user_id, state, username)
+
+    def update_dm_manifest(self) -> dict:
+        """Update DM manifest.yaml with overview of all synced DMs.
+
+        Returns:
+            Generated manifest dict
+        """
+        self._ensure_dir(self._dm_base_dir)
+        manifest_path = self._dm_base_dir / "manifest.yaml"
+
+        # Scan all DM directories
+        dms = []
+        total_messages = 0
+
+        for dm_dir in self._dm_base_dir.iterdir():
+            if not dm_dir.is_dir():
+                continue
+
+            # Skip hidden directories
+            if dm_dir.name.startswith('.'):
+                continue
+
+            # Read sync state
+            sync_state_file = dm_dir / "sync_state.yaml"
+            if not sync_state_file.exists():
+                continue
+
+            with open(sync_state_file, "r") as f:
+                sync_state = yaml.safe_load(f) or {}
+
+            # Read user metadata if available
+            user_yaml = dm_dir / "user.yaml"
+            user_meta = {}
+            if user_yaml.exists():
+                with open(user_yaml, "r") as f:
+                    user_meta = yaml.safe_load(f) or {}
+
+            message_count = sync_state.get("message_count", 0)
+            total_messages += message_count
+
+            dms.append({
+                "user_id": sync_state.get("user_id") or user_meta.get("id"),
+                "username": sync_state.get("username") or user_meta.get("username"),
+                "display_name": sync_state.get("display_name") or user_meta.get("display_name"),
+                "directory": dm_dir.name,
+                "last_sync": sync_state.get("last_sync"),
+                "message_count": message_count,
+            })
+
+        # Sort DMs by message count (most active first)
+        dms.sort(key=lambda d: d.get("message_count", 0), reverse=True)
+
+        # Build manifest
+        manifest = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": {
+                "total_users": len(dms),
+                "total_messages": total_messages,
+                "platform": "discord",
+            },
+            "users": dms,
+        }
+
+        # Write manifest
+        with open(manifest_path, "w") as f:
+            yaml.safe_dump(manifest, f, default_flow_style=False, sort_keys=False)
+
+        return manifest
 
 
 # Global storage instance
