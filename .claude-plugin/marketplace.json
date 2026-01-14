@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Community agent plugins for Claude Code",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "plugins": [
     {
@@ -30,7 +30,7 @@
     {
       "name": "discord-connector",
       "description": "Sync, read, and analyze Discord messages with Claude Code. Includes skills for message syncing, channel browsing, and chat summarization.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"
@@ -48,7 +48,7 @@
     {
       "name": "telegram-connector",
       "description": "Sync, read, and analyze Telegram messages with Claude Code. Includes skills for message syncing, group browsing, and chat analysis.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"

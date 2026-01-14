@@ -4,6 +4,8 @@ Loads from config/agents.yaml with platform-specific sections.
 """
 
 import os
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -16,8 +18,75 @@ class ConfigError(Exception):
     pass
 
 
+class SetupError(Exception):
+    """Error with guided recovery steps.
+
+    Provides actionable hints and optional documentation links
+    to help users resolve configuration issues.
+    """
+    def __init__(self, message: str, hint: str, docs_url: Optional[str] = None):
+        self.message = message
+        self.hint = hint
+        self.docs_url = docs_url
+        super().__init__(message)
+
+    def __str__(self) -> str:
+        parts = [self.message, f"\nHint: {self.hint}"]
+        if self.docs_url:
+            parts.append(f"\nDocs: {self.docs_url}")
+        return "".join(parts)
+
+
+@dataclass
+class SetupState:
+    """Tracks setup state for onboarding detection.
+
+    Used to determine if this is a first-run, what's configured,
+    and whether to show QuickStart or returning user prompts.
+    """
+    # File existence
+    config_exists: bool
+    env_exists: bool
+    profile_exists: bool
+
+    # Platform-specific configuration
+    discord_token_set: bool
+    discord_server_configured: bool
+    telegram_credentials_set: bool
+    telegram_group_configured: bool
+
+    # Metadata from config
+    setup_complete: bool
+    setup_mode: Optional[str]  # "quickstart" or "advanced"
+    last_run_at: Optional[datetime]
+    version: Optional[str]
+
+    @property
+    def is_first_run(self) -> bool:
+        """True if this appears to be a first-time setup."""
+        return not self.config_exists or not self.setup_complete
+
+    @property
+    def discord_ready(self) -> bool:
+        """True if Discord is fully configured and ready to use."""
+        return self.discord_token_set and self.discord_server_configured
+
+    @property
+    def telegram_ready(self) -> bool:
+        """True if Telegram is fully configured and ready to use."""
+        return self.telegram_credentials_set and self.telegram_group_configured
+
+
 DEFAULT_CONFIG = """# Community Agent Configuration
 # Shared settings for all platform connectors
+
+# Setup metadata (auto-managed, do not edit)
+_meta:
+  created_at: null
+  last_run_at: null
+  version: null
+  setup_complete: false
+  setup_mode: null
 
 # Shared storage directory
 data_dir: "./data"
@@ -63,7 +132,10 @@ class CommunityConfig:
             config_dir: Directory containing config files. Defaults to ./config
             env_file: Path to .env file. Defaults to ./.env
         """
-        self._base_dir = Path.cwd()
+        # Use CLAUDE_LOCAL_DIR if available (set by Claude Code to user's working dir)
+        # Fall back to cwd for standalone usage
+        local_dir = os.getenv("CLAUDE_LOCAL_DIR")
+        self._base_dir = Path(local_dir) if local_dir else Path.cwd()
         self._config_dir = config_dir or self._base_dir / "config"
         self._env_file = env_file or self._base_dir / ".env"
 
@@ -88,14 +160,92 @@ class CommunityConfig:
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "w") as f:
             f.write(DEFAULT_CONFIG)
+        # Set creation timestamp
+        self._config = yaml.safe_load(DEFAULT_CONFIG) or {}
+        self._config.setdefault("_meta", {})["created_at"] = datetime.now().isoformat()
+        with open(filepath, "w") as f:
+            yaml.safe_dump(self._config, f, default_flow_style=False)
         print(f"Created default config at {filepath}")
 
     def save_config(self) -> None:
         """Save current configuration to agents.yaml."""
         filepath = self._config_dir / "agents.yaml"
         filepath.parent.mkdir(parents=True, exist_ok=True)
+        # Update last_run_at timestamp
+        self._config.setdefault("_meta", {})["last_run_at"] = datetime.now().isoformat()
         with open(filepath, "w") as f:
             yaml.safe_dump(self._config, f, default_flow_style=False)
+
+    # -------------------------------------------------------------------------
+    # Setup state detection
+    # -------------------------------------------------------------------------
+
+    def is_first_run(self) -> bool:
+        """Check if this is a first-time setup.
+
+        Returns True if config doesn't exist or setup hasn't been completed.
+        """
+        config_path = self._config_dir / "agents.yaml"
+        if not config_path.exists():
+            return True
+        meta = self._config.get("_meta", {})
+        return not meta.get("setup_complete", False)
+
+    def has_discord_token(self) -> bool:
+        """Check if Discord token is set (without throwing)."""
+        return bool(os.getenv("DISCORD_USER_TOKEN"))
+
+    def has_telegram_credentials(self) -> bool:
+        """Check if all Telegram credentials are set (without throwing)."""
+        return all([
+            os.getenv("TELEGRAM_API_ID"),
+            os.getenv("TELEGRAM_API_HASH"),
+            os.getenv("TELEGRAM_SESSION"),
+        ])
+
+    def get_setup_state(self) -> SetupState:
+        """Get detailed setup state for onboarding flow.
+
+        Returns a SetupState dataclass with all configuration checks.
+        """
+        config_path = self._config_dir / "agents.yaml"
+        profile_path = self._config_dir / "PROFILE.md"
+        meta = self._config.get("_meta", {})
+
+        # Parse last_run_at if present
+        last_run_at = None
+        if meta.get("last_run_at"):
+            try:
+                last_run_at = datetime.fromisoformat(meta["last_run_at"])
+            except (ValueError, TypeError):
+                pass
+
+        return SetupState(
+            config_exists=config_path.exists(),
+            env_exists=self._env_file.exists(),
+            profile_exists=profile_path.exists(),
+            discord_token_set=self.has_discord_token(),
+            discord_server_configured=bool(self.discord_server_id),
+            telegram_credentials_set=self.has_telegram_credentials(),
+            telegram_group_configured=bool(self.telegram_default_group_id),
+            setup_complete=meta.get("setup_complete", False),
+            setup_mode=meta.get("setup_mode"),
+            last_run_at=last_run_at,
+            version=meta.get("version"),
+        )
+
+    def mark_setup_complete(self, mode: str = "quickstart", version: str = "1.0.0") -> None:
+        """Mark setup as complete after successful onboarding.
+
+        Args:
+            mode: Setup mode used ("quickstart" or "advanced")
+            version: Version of the setup process
+        """
+        self._config.setdefault("_meta", {})
+        self._config["_meta"]["setup_complete"] = True
+        self._config["_meta"]["setup_mode"] = mode
+        self._config["_meta"]["version"] = version
+        self.save_config()
 
     # -------------------------------------------------------------------------
     # Shared properties
@@ -333,3 +483,13 @@ def reload_config() -> CommunityConfig:
     global _config
     _config = CommunityConfig()
     return _config
+
+
+def is_first_run() -> bool:
+    """Check if this is a first-time setup (module-level convenience)."""
+    return get_config().is_first_run()
+
+
+def get_setup_state() -> SetupState:
+    """Get detailed setup state (module-level convenience)."""
+    return get_config().get_setup_state()
