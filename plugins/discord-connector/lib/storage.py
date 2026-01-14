@@ -536,6 +536,71 @@ class Storage:
 
         return matches
 
+    # === Health Reports ===
+
+    def save_health_report(
+        self,
+        server_id: str,
+        report_data: dict,
+        server_name: Optional[str] = None
+    ):
+        """Save health report for a server.
+
+        Overwrites any existing report (one report per server).
+
+        Args:
+            server_id: Discord server ID
+            report_data: Report data dictionary
+            server_name: Optional server name for directory lookup
+        """
+        server_dir = self._get_server_dir(server_id, server_name)
+        self._ensure_dir(server_dir)
+
+        # Save YAML report
+        yaml_path = server_dir / "health-report.yaml"
+        with open(yaml_path, "w") as f:
+            yaml.safe_dump(report_data, f, default_flow_style=False, sort_keys=False)
+
+    def get_health_report(
+        self,
+        server_id: str,
+        server_name: Optional[str] = None
+    ) -> Optional[dict]:
+        """Get health report for a server.
+
+        Args:
+            server_id: Discord server ID
+            server_name: Optional server name for directory lookup
+
+        Returns:
+            Report data dict, or None if not found
+        """
+        server_dir = self._get_server_dir(server_id, server_name)
+        yaml_path = server_dir / "health-report.yaml"
+
+        if not yaml_path.exists():
+            return None
+
+        with open(yaml_path, "r") as f:
+            return yaml.safe_load(f)
+
+    def health_report_exists(
+        self,
+        server_id: str,
+        server_name: Optional[str] = None
+    ) -> bool:
+        """Check if a health report exists for a server.
+
+        Args:
+            server_id: Discord server ID
+            server_name: Optional server name for directory lookup
+
+        Returns:
+            True if report exists
+        """
+        server_dir = self._get_server_dir(server_id, server_name)
+        return (server_dir / "health-report.yaml").exists()
+
     # === Server Metadata ===
 
     def save_server_metadata(

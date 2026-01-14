@@ -834,6 +834,79 @@ async def sync_dms_standalone(
         await client.close()
 
 
+def _run_analysis_after_sync(server_id: str, days: int) -> None:
+    """Run health analysis after sync completes.
+
+    Args:
+        server_id: Server ID to analyze.
+        days: Number of days to analyze.
+    """
+    try:
+        from lib.analytics.report import generate_health_report, save_health_report
+        from lib.analytics.benchmarks import load_custom_benchmarks
+
+        config = get_config()
+        storage = get_storage()
+
+        # Find server directory
+        server_dir = None
+        for d in storage._base_dir.iterdir():
+            if d.is_dir() and d.name.startswith(server_id):
+                server_dir = d
+                break
+
+        if not server_dir:
+            print(f"\nWarning: Could not find server directory for analysis")
+            return
+
+        # Get server name
+        sync_state = storage.get_sync_state(server_id)
+        server_name = sync_state.get("server_name", f"Server {server_id}")
+
+        print(f"\nGenerating health report...")
+
+        # Load custom benchmarks
+        custom_benchmarks = None
+        try:
+            community_config = config._community_config._config
+            custom_benchmarks = load_custom_benchmarks(community_config)
+        except Exception:
+            pass
+
+        # Generate report
+        report = generate_health_report(
+            server_dir=server_dir,
+            server_id=server_id,
+            server_name=server_name,
+            days=days,
+            custom_benchmarks=custom_benchmarks,
+            verbose=True,
+        )
+
+        # Save report
+        md_path, _ = save_health_report(report, server_dir)
+
+        # Print summary
+        print("")
+        print("=" * 50)
+        print("✅ Health report generated!")
+        print("")
+        print(f"Overall Score: {report.health_scores.overall}/100", end="")
+        if report.health_scores.overall >= 60:
+            print(" (Healthy)")
+        elif report.health_scores.overall >= 40:
+            print(" (Warning)")
+        else:
+            print(" (Critical)")
+        print("")
+        print(f"Report saved to: {md_path}")
+
+    except ImportError:
+        print(f"\nWarning: Analytics module not available. Skipping analysis.")
+    except Exception as e:
+        print(f"\nWarning: Analysis failed: {e}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Sync Discord messages to local storage"
@@ -910,6 +983,13 @@ def main():
         help=f"Max messages per DM (default: {DM_DEFAULT_LIMIT})"
     )
 
+    # Analytics integration
+    parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Generate health report after sync completes"
+    )
+
     args = parser.parse_args()
 
     # Parse --since date if provided
@@ -974,6 +1054,10 @@ def main():
                     incremental=not args.full,
                     limit=args.dm_limit
                 ))
+
+        # Run analysis if --analyze flag is set
+        if args.analyze and server_id:
+            _run_analysis_after_sync(server_id, args.days)
 
     except ConfigError as e:
         print(f"Configuration Error: {e}", file=sys.stderr)
