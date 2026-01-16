@@ -52,7 +52,7 @@ def print_human_readable(persona: dict) -> None:
         print()
 
     print("-" * 50)
-    print("To update persona, run: discord-init --mode advanced")
+    print("To update persona, run: community-init --mode advanced")
     print("Or edit: config/agents.yaml")
 
 

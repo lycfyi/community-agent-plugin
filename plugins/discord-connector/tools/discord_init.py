@@ -22,6 +22,9 @@ Exit Codes:
 
 WARNING: Using a user token may violate Discord's Terms of Service.
 This is for personal archival and analysis only.
+
+NOTE: This tool only configures Discord server connection.
+      For bot persona setup, run 'community-init' first.
 """
 
 import argparse
@@ -35,12 +38,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.config import get_config, ConfigError, SetupError
 from lib.discord_client import DiscordUserClient, DiscordClientError, AuthenticationError
 from community_agent.lib.profile import ensure_profile
-from community_agent.lib.persona import (
-    select_persona_quickstart,
-    select_persona_interactive,
-    get_preset,
-    get_default_persona,
-)
 
 
 def print_welcome(is_first_run: bool, mode: str) -> None:
@@ -77,7 +74,6 @@ def prompt_returning_user(config) -> str:
     print()
 
     # For non-interactive CLI, default to 'update'
-    # In future, this could prompt for input
     return "update"
 
 
@@ -103,26 +99,16 @@ async def run_quickstart(config, client) -> int:
 
         # Save configuration
         config.set_default_server(selected["id"], selected["name"])
-
-        # Set default persona (community_manager)
-        persona = select_persona_quickstart()
-        config.set_persona(persona.to_dict())
-
-        print(f"Bot Persona: {persona.name} ({persona.role})")
-        print(f"  Personality: {persona.personality.split('.')[0]}.")
-        print(f"  Tasks: {', '.join(persona.tasks[:3])}")
-        print()
-        print("Tip: Run with --mode advanced to customize persona")
-        print()
-
         config.mark_setup_complete(mode="quickstart")
 
         # Create profile template if it doesn't exist
         ensure_profile()
 
-        print("✓ Configuration saved")
+        print("Configuration saved")
         print()
         print("Next: Run 'discord-sync' to download messages")
+        print()
+        print("Tip: Run 'community-init' to configure bot persona")
 
         return 0
 
@@ -194,39 +180,20 @@ async def run_advanced(config, client, args) -> int:
 
         # Save configuration
         config.set_default_server(selected["id"], selected["name"])
-
-        # Persona selection
-        print()
-        if args.persona:
-            # Use specified persona preset
-            persona = get_preset(args.persona)
-            if persona is None:
-                persona = get_default_persona()
-            print(f"Using persona: {persona.name} ({persona.role})")
-        else:
-            # Interactive persona selection
-            persona = select_persona_interactive()
-
-        config.set_persona(persona.to_dict())
-
-        print()
-        print(f"Bot Persona: {persona.name} ({persona.role})")
-        print(f"  Personality: {persona.personality.split('.')[0]}.")
-        print(f"  Style: {persona.communication_style}")
-        print()
-
         config.mark_setup_complete(mode="advanced")
 
         # Create profile template if it doesn't exist
         ensure_profile()
 
-        print("✓ Configuration saved to config/agents.yaml")
+        print("Configuration saved to config/agents.yaml")
         print(f"  Server: {selected['name']} ({selected['id']})")
         print()
         print("Next steps:")
         print("  1. Sync messages: Run 'discord-sync'")
         print("  2. Read messages: Run 'discord-read'")
         print("  3. Or ask Claude: 'Sync my Discord messages'")
+        print()
+        print("Tip: Run 'community-init' to configure bot persona")
 
         return 0
 
@@ -246,7 +213,7 @@ async def main(args: argparse.Namespace) -> int:
         print()
         print("To set up your Discord token:", file=sys.stderr)
         print("  1. Open Discord in browser", file=sys.stderr)
-        print("  2. Press F12 → Network tab", file=sys.stderr)
+        print("  2. Press F12 -> Network tab", file=sys.stderr)
         print("  3. Do any action in Discord", file=sys.stderr)
         print("  4. Find request to discord.com/api", file=sys.stderr)
         print("  5. Copy 'Authorization' header value", file=sys.stderr)
@@ -315,7 +282,8 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Initialize Discord configuration from your account",
-        epilog="WARNING: Using a user token may violate Discord's ToS."
+        epilog="WARNING: Using a user token may violate Discord's ToS. "
+               "For bot persona setup, run 'community-init'."
     )
     parser.add_argument(
         "--mode",
@@ -326,11 +294,6 @@ def parse_args() -> argparse.Namespace:
         "--server",
         metavar="SERVER_ID",
         help="Specific server ID to configure"
-    )
-    parser.add_argument(
-        "--persona",
-        choices=["community_manager", "friendly_helper", "tech_expert", "custom"],
-        help="Bot persona preset (advanced mode only)"
     )
     return parser.parse_args()
 
