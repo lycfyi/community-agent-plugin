@@ -1,0 +1,3 @@
+# discord-analyze needs synced data to analyze
+requires:
+  - sync_data

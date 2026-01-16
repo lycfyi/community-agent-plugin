@@ -1,11 +1,11 @@
 """Skill runner with requirements enforcement.
 
 This module provides utilities for running skills with automatic
-requirements checking based on declarations in plugin.json.
+requirements checking based on declarations in requirements.yaml.
 
 Usage (Option A - Declarative, recommended):
-    Requirements are read from plugin.json and enforced automatically.
-    No code changes needed in skill scripts.
+    Requirements are read from requirements.yaml in the skill directory
+    and enforced automatically. No code changes needed in skill scripts.
 
 Usage (Option B - In-script wrapper):
     from lib.skill_runner import main_with_requirements
@@ -22,41 +22,39 @@ Usage (Option B - In-script wrapper):
         ))
 """
 
-import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Callable, Optional
 
+import yaml
+
 from .config import get_config
 from .requirements import RequirementChecker
 
 
-def load_skill_requirements(plugin_dir: Path, skill_name: str) -> list[str]:
-    """Load requirements for a skill from plugin.json.
+def load_skill_requirements(skill_dir: Path) -> list[str]:
+    """Load requirements for a skill from requirements.yaml.
 
     Args:
-        plugin_dir: Path to the plugin directory
-        skill_name: Name of the skill (e.g., "discord-send")
+        skill_dir: Path to the skill directory (e.g., skills/discord-send/)
 
     Returns:
-        List of requirement names, or empty list if not declared
+        List of requirement names, or empty list if no requirements file exists.
     """
-    plugin_json = plugin_dir / ".claude-plugin" / "plugin.json"
+    requirements_file = skill_dir / "requirements.yaml"
 
-    if not plugin_json.exists():
+    if not requirements_file.exists():
         return []
 
-    with open(plugin_json) as f:
-        data = json.load(f)
+    with open(requirements_file) as f:
+        data = yaml.safe_load(f)
 
-    skills = data.get("skills", {})
-    skill_config = skills.get(skill_name, {})
-    return skill_config.get("requires", [])
+    return data.get("requires", []) if data else []
 
 
 def run_skill(
-    plugin_dir: Path,
+    skill_dir: Path,
     skill_name: str,
     script_path: Path,
     args: Optional[list[str]] = None,
@@ -65,7 +63,7 @@ def run_skill(
     """Run a skill with requirements enforcement.
 
     Args:
-        plugin_dir: Path to the plugin directory
+        skill_dir: Path to the skill directory (e.g., skills/discord-send/)
         skill_name: Name of the skill (e.g., "discord-send")
         script_path: Path to the skill's Python script
         args: Arguments to pass to the script
@@ -76,8 +74,8 @@ def run_skill(
     """
     args = args or []
 
-    # Load requirements from plugin.json
-    requirements = load_skill_requirements(plugin_dir, skill_name)
+    # Load requirements from skill's requirements.yaml
+    requirements = load_skill_requirements(skill_dir)
 
     if requirements:
         # Check requirements
@@ -89,6 +87,7 @@ def run_skill(
             return 1
 
     # Run the actual skill script
+    plugin_dir = skill_dir.parent.parent  # skills/discord-send/ -> plugin root
     result = subprocess.run(
         [sys.executable, str(script_path)] + args,
         cwd=plugin_dir,
