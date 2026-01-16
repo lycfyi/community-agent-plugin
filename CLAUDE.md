@@ -93,7 +93,7 @@ data_dir: "./data"
 discord:
   retention_days: 30
   sync_limits:
-    max_messages_per_channel: 500
+    max_messages_per_channel: 1000
     ...
 
 # Telegram settings

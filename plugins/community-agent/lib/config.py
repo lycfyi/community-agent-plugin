@@ -99,8 +99,8 @@ discord:
   retention_days: 30
   default_server_id: null
   sync_limits:
-    max_messages_per_channel: 500
-    max_channels_per_server: 10
+    max_messages_per_channel: 1000
+    max_channels_per_server: 20
     priority_channels:
       - general
       - announcements
@@ -352,17 +352,17 @@ class CommunityConfig:
 
     @property
     def discord_max_messages_per_channel(self) -> int:
-        """Get max messages to sync per Discord channel (default 500)."""
+        """Get max messages to sync per Discord channel (default 1000)."""
         discord = self._config.get("discord", {})
         sync_limits = discord.get("sync_limits", {})
-        return int(sync_limits.get("max_messages_per_channel", 500))
+        return int(sync_limits.get("max_messages_per_channel", 1000))
 
     @property
     def discord_max_channels_per_server(self) -> int:
-        """Get max channels to sync per Discord server (default 10)."""
+        """Get max channels to sync per Discord server (default 20)."""
         discord = self._config.get("discord", {})
         sync_limits = discord.get("sync_limits", {})
-        return int(sync_limits.get("max_channels_per_server", 10))
+        return int(sync_limits.get("max_channels_per_server", 20))
 
     @property
     def discord_priority_channels(self) -> list:
