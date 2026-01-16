@@ -15,31 +15,5 @@
     "sync",
     "messages",
     "analysis"
-  ],
-  "skills": {
-    "discord-init": {
-      "requires": []
-    },
-    "discord-doctor": {
-      "requires": []
-    },
-    "discord-list": {
-      "requires": ["discord_token"]
-    },
-    "discord-sync": {
-      "requires": ["discord_token", "discord_server"]
-    },
-    "discord-read": {
-      "requires": ["sync_data"]
-    },
-    "discord-send": {
-      "requires": ["discord_token", "discord_server", "persona"]
-    },
-    "discord-chat-summary": {
-      "requires": ["sync_data", "persona"]
-    },
-    "discord-analyze": {
-      "requires": ["sync_data"]
-    }
-  }
+  ]
 }

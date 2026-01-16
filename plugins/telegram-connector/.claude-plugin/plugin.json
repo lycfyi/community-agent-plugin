@@ -15,28 +15,5 @@
     "sync",
     "messages",
     "analysis"
-  ],
-  "skills": {
-    "telegram-init": {
-      "requires": []
-    },
-    "telegram-doctor": {
-      "requires": []
-    },
-    "telegram-list": {
-      "requires": ["telegram_session"]
-    },
-    "telegram-sync": {
-      "requires": ["telegram_session", "telegram_group"]
-    },
-    "telegram-read": {
-      "requires": ["sync_data"]
-    },
-    "telegram-send": {
-      "requires": ["telegram_session", "telegram_group", "persona"]
-    },
-    "telegram-chat-summary": {
-      "requires": ["sync_data", "persona"]
-    }
-  }
+  ]
 }
