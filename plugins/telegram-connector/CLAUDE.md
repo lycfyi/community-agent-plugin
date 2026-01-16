@@ -2,6 +2,21 @@
 
 Plugin guidance for Claude Code when working with Telegram community data.
 
+## IMPORTANT: How to Use This Plugin
+
+**ALWAYS use the Skill tool to invoke Telegram operations.** Do NOT try to run `telegram` as a bash command - it doesn't exist.
+
+When user asks about Telegram (sync, list, read, send), invoke the appropriate skill:
+
+```
+Skill(skill: "telegram-connector:telegram-list")  # List groups/channels
+Skill(skill: "telegram-connector:telegram-sync")  # Sync messages
+Skill(skill: "telegram-connector:telegram-read")  # Read synced messages
+Skill(skill: "telegram-connector:telegram-send")  # Send messages
+```
+
+The skill will load instructions showing which Python scripts to run.
+
 ## Overview
 
 This plugin provides skills for syncing and analyzing Telegram messages. Messages are stored as Markdown files optimized for LLM comprehension.

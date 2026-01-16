@@ -2,6 +2,22 @@
 
 Plugin guidance for Claude Code when working with Discord community data.
 
+## IMPORTANT: How to Use This Plugin
+
+**ALWAYS use the Skill tool to invoke Discord operations.** Do NOT try to run `discord` as a bash command - it doesn't exist.
+
+When user asks about Discord (sync, list, read, send, analyze), invoke the appropriate skill:
+
+```
+Skill(skill: "discord-connector:discord-list")    # List servers/channels
+Skill(skill: "discord-connector:discord-sync")    # Sync messages
+Skill(skill: "discord-connector:discord-read")    # Read synced messages
+Skill(skill: "discord-connector:discord-send")    # Send messages
+Skill(skill: "discord-connector:discord-analyze") # Analyze community health
+```
+
+The skill will load instructions showing which Python scripts to run.
+
 ## Overview
 
 This plugin provides skills for syncing and analyzing Discord messages. Messages are stored as Markdown files optimized for LLM comprehension.
