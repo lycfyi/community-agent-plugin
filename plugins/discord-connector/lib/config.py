@@ -1,18 +1,14 @@
 """Configuration loader for Discord Agent.
 
-Uses shared config from the plugin's community_agent/ symlink (points to ../community-agent).
-When installed, Claude Code follows symlinks during copy, ensuring shared code is included.
-
-Import Strategy:
-- Tools add the plugin root to sys.path before importing lib.config
-- This allows us to import from community_agent.lib.config directly
+Self-contained configuration that includes the shared CommunityConfig.
+No external symlinks required - all dependencies are bundled.
 """
 
 from pathlib import Path
 from typing import Optional
 
-# Import from community-agent library via symlink
-from community_agent.lib.config import (
+# Import from local community_config (bundled copy of shared config)
+from .community_config import (
     CommunityConfig,
     ConfigError,
     SetupError,

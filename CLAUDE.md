@@ -46,20 +46,21 @@ plugins/
 │   │   └── community-manager.md    # Orchestrating agent
 │   ├── skills/
 │   │   └── community-patterns/     # Domain knowledge
-│   └── lib/                        # Shared utilities
+│   └── lib/                        # Shared utilities (source of truth)
 │
-├── discord-connector/       # HANDS (Discord)
-│   ├── community_agent -> ../community-agent
+├── discord-connector/       # HANDS (Discord) - Self-contained
 │   ├── skills/              # Platform skills
 │   ├── tools/               # Python implementations
-│   └── lib/
+│   └── lib/                 # Includes bundled shared code
 │
-└── telegram-connector/      # HANDS (Telegram)
-    ├── community_agent -> ../community-agent
+└── telegram-connector/      # HANDS (Telegram) - Self-contained
     ├── skills/              # Platform skills
     ├── tools/               # Python implementations
-    └── lib/
+    └── lib/                 # Includes bundled shared code
 ```
+
+Each connector is self-contained with bundled copies of shared utilities (config, profile, persona).
+This ensures plugins work correctly when installed separately.
 
 ## Installation
 
@@ -109,14 +110,12 @@ Each plugin is located in `plugins/<plugin-name>/` with its own:
 - `agents/` - Agent definitions (community-agent only)
 - `skills/` - Available skills
 - `tools/` - Tool implementations
-- `lib/` - Library code
-
-Platform connectors depend on `community-agent` via symlink.
+- `lib/` - Library code (connectors include bundled shared utilities)
 
 ## Contributing
 
 To add a new plugin:
 1. Create a new directory under `plugins/`
 2. Add `.claude-plugin/plugin.json` with plugin metadata
-3. If it's a platform connector, add symlink: `community_agent -> ../community-agent`
+3. If it's a platform connector, copy shared utilities from `community-agent/lib/` (config, profile, persona)
 4. Update `.claude-plugin/marketplace.json` to include your plugin

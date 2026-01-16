@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from lib.config import get_config, ConfigError, SetupError
 from lib.discord_client import DiscordUserClient, DiscordClientError, AuthenticationError
-from community_agent.lib.profile import ensure_profile
+from lib.profile import ensure_profile
 
 
 def print_welcome(is_first_run: bool, mode: str) -> None:

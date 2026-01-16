@@ -47,7 +47,7 @@ from lib.telegram_client import (
     AuthenticationError,
     TelegramClientError,
 )
-from community_agent.lib.profile import ensure_profile
+from lib.profile import ensure_profile
 
 
 def print_welcome(is_first_run: bool, mode: str) -> None:
