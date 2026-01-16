@@ -10,11 +10,16 @@
   "repository": "https://github.com/lycfyi/community-agent-plugin",
   "license": "AGPL-3.0",
   "keywords": ["community", "agent", "orchestrator", "discord", "telegram", "management"],
+  "agents": {
+    "community-manager": {
+      "requires": ["discord-connector", "telegram-connector"]
+    }
+  },
   "skills": {
-    "community-init": {
+    "community-patterns": {
       "requires": []
     },
-    "community-patterns": {
+    "community-status": {
       "requires": []
     }
   }
