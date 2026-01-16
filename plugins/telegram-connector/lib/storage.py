@@ -31,6 +31,11 @@ class Storage:
     # Default message limit for DMs (privacy-conscious)
     DM_DEFAULT_LIMIT = 100
 
+    # Storage structure version
+    # v1: Legacy - data/{group_id}/, dms/telegram/{user_id}/
+    # v2: Unified - data/telegram/groups/{group_id}/, data/telegram/dms/{user_id}/
+    STORAGE_VERSION = 2
+
     def __init__(self, base_dir: Optional[Path] = None):
         """Initialize storage.
 
@@ -41,8 +46,148 @@ class Storage:
             config = get_config()
             base_dir = config.data_dir
         self._base_dir = Path(base_dir)
-        # DMs go to a separate root directory
-        self._dm_base_dir = Path(base_dir).parent / "dms" / "telegram"
+
+        # Detect storage structure version and set paths accordingly
+        self._storage_version = self._detect_storage_version()
+
+        if self._storage_version >= 2:
+            # New unified structure: data/telegram/groups/, data/telegram/dms/
+            self._groups_dir = self._base_dir / "telegram" / "groups"
+            self._dm_base_dir = self._base_dir / "telegram" / "dms"
+        else:
+            # Legacy structure: data/{group_id}/, dms/telegram/{user_id}/
+            self._groups_dir = self._base_dir
+            self._dm_base_dir = self._base_dir.parent / "dms" / "telegram"
+
+    def _detect_storage_version(self) -> int:
+        """Detect current storage structure version.
+
+        Returns:
+            1 = Legacy structure (data/{group_id}/, dms/telegram/)
+            2 = Unified structure (data/telegram/groups/, data/telegram/dms/)
+        """
+        # Check for new unified structure
+        new_structure = self._base_dir / "telegram" / "groups"
+        if new_structure.exists():
+            return 2
+
+        # Check for legacy DM path
+        legacy_dm = self._base_dir.parent / "dms" / "telegram"
+        if legacy_dm.exists():
+            return 1
+
+        # Check for any group directories in legacy location
+        if self._base_dir.exists():
+            for item in self._base_dir.iterdir():
+                if item.is_dir() and not item.name.startswith('.') and item.name not in ("discord", "telegram"):
+                    # Check if this looks like a group dir (has sync_state.yaml)
+                    if (item / "sync_state.yaml").exists() or (item / "group.yaml").exists():
+                        return 1
+
+        # Fresh install - use new structure
+        return 2
+
+    def needs_migration(self) -> bool:
+        """Check if migration to v2 structure is needed.
+
+        Returns:
+            True if legacy data exists that should be migrated
+        """
+        return self._storage_version < 2
+
+    def migrate_to_v2(self, dry_run: bool = False) -> dict:
+        """Migrate from legacy structure to unified v2 structure.
+
+        Args:
+            dry_run: If True, only report what would be migrated
+
+        Returns:
+            Migration report dict with groups_migrated, dms_migrated, errors
+        """
+        import shutil
+
+        report = {
+            "groups_migrated": [],
+            "dms_migrated": [],
+            "errors": [],
+            "dry_run": dry_run,
+        }
+
+        if self._storage_version >= 2:
+            return {"status": "already_migrated", **report}
+
+        # Target directories for v2 structure
+        new_groups_dir = self._base_dir / "telegram" / "groups"
+        new_dm_dir = self._base_dir / "telegram" / "dms"
+
+        # Ensure target directories exist
+        if not dry_run:
+            new_groups_dir.mkdir(parents=True, exist_ok=True)
+            new_dm_dir.mkdir(parents=True, exist_ok=True)
+
+        # Migrate groups from data/{group_id}/ to data/telegram/groups/{group_id}/
+        legacy_groups_dir = self._base_dir
+        if legacy_groups_dir.exists():
+            for item in legacy_groups_dir.iterdir():
+                if not item.is_dir() or item.name.startswith('.') or item.name in ("discord", "telegram"):
+                    continue
+                # Check if this looks like a group dir (with sync_state.yaml or group.yaml)
+                if (item / "sync_state.yaml").exists() or (item / "group.yaml").exists():
+                    new_path = new_groups_dir / item.name
+                    report["groups_migrated"].append({
+                        "old": str(item),
+                        "new": str(new_path)
+                    })
+                    if not dry_run:
+                        try:
+                            shutil.move(str(item), str(new_path))
+                        except Exception as e:
+                            report["errors"].append(f"Failed to move group {item.name}: {e}")
+
+        # Migrate DMs from dms/telegram/{user_id}/ to data/telegram/dms/{user_id}/
+        legacy_dm_dir = self._base_dir.parent / "dms" / "telegram"
+        if legacy_dm_dir.exists():
+            for item in legacy_dm_dir.iterdir():
+                if not item.is_dir() or item.name.startswith('.'):
+                    continue
+                new_path = new_dm_dir / item.name
+                report["dms_migrated"].append({
+                    "old": str(item),
+                    "new": str(new_path)
+                })
+                if not dry_run:
+                    try:
+                        shutil.move(str(item), str(new_path))
+                    except Exception as e:
+                        report["errors"].append(f"Failed to move DM {item.name}: {e}")
+
+            # Clean up legacy dms/telegram/ and dms/ if empty
+            if not dry_run:
+                try:
+                    # Remove legacy DM manifest if present
+                    legacy_manifest = legacy_dm_dir / "manifest.yaml"
+                    if legacy_manifest.exists():
+                        legacy_manifest.unlink()
+
+                    # Try to remove empty directories
+                    if not any(legacy_dm_dir.iterdir()):
+                        legacy_dm_dir.rmdir()
+                        dms_parent = legacy_dm_dir.parent
+                        if not any(dms_parent.iterdir()):
+                            dms_parent.rmdir()
+                except Exception:
+                    pass  # Non-critical cleanup failure
+
+        # Update internal state after migration
+        if not dry_run and not report["errors"]:
+            self._storage_version = 2
+            self._groups_dir = new_groups_dir
+            self._dm_base_dir = new_dm_dir
+            # Regenerate manifests at new locations
+            self.update_manifest()
+            self.update_dm_manifest()
+
+        return {"status": "completed" if not dry_run else "dry_run", **report}
 
     def _ensure_dir(self, path: Path) -> None:
         """Ensure a directory exists."""
@@ -79,17 +224,18 @@ class Storage:
             Path to group directory
         """
         # Try to find existing directory first
-        for existing in self._base_dir.glob(f"{group_id}*"):
-            if existing.is_dir():
-                return existing
+        if self._groups_dir.exists():
+            for existing in self._groups_dir.glob(f"{group_id}*"):
+                if existing.is_dir():
+                    return existing
 
         # Build new directory name with slug
         if group_name:
             slug = self._slugify(group_name)
-            return self._base_dir / f"{group_id}-{slug}"
+            return self._groups_dir / f"{group_id}-{slug}"
 
         # Fallback to just group_id
-        return self._base_dir / str(group_id)
+        return self._groups_dir / str(group_id)
 
     # === Sync State ===
 
@@ -459,11 +605,15 @@ class Storage:
         self._ensure_dir(self._base_dir)
         manifest_path = self._base_dir / "manifest.yaml"
 
-        # Scan all group directories
+        # Scan all group directories (from _groups_dir, not _base_dir)
         groups = []
         total_messages = 0
 
-        for group_dir in self._base_dir.iterdir():
+        # Ensure groups dir exists before iterating
+        if not self._groups_dir.exists():
+            self._ensure_dir(self._groups_dir)
+
+        for group_dir in self._groups_dir.iterdir():
             if not group_dir.is_dir():
                 continue
 
@@ -496,7 +646,7 @@ class Storage:
             groups.append({
                 "name": sync_state.get("group_name") or group_meta.get("name"),
                 "id": sync_state.get("group_id") or group_meta.get("id"),
-                "directory": group_dir.name,
+                "directory": f"telegram/groups/{group_dir.name}",
                 "type": group_meta.get("type", "group"),
                 "member_count": group_meta.get("member_count", 0),
                 "last_sync": sync_state.get("last_sync"),

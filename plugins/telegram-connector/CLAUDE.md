@@ -28,13 +28,21 @@ your-project/                       # Current working directory
 ├── config/
 │   └── agents.yaml                # Unified config for all platforms
 ├── data/                          # Synced messages (auto-created)
-│   ├── manifest.yaml
-│   └── {group_id}-{slug}/...
+│   ├── manifest.yaml              # Unified manifest for all platforms
+│   └── telegram/
+│       ├── groups/
+│       │   └── {group_id}-{slug}/...
+│       └── dms/
+│           └── {user_id}-{slug}/...
 ```
 
 ## Data Locations
 
-**All paths are relative to cwd (current working directory):**
+**All paths are relative to cwd (current working directory).**
+
+**Storage Structure:** Uses unified v2 structure under `data/` with platform subdirectories.
+
+### Group Data
 
 **Manifest (index of all synced data):**
 ```
@@ -43,18 +51,34 @@ data/manifest.yaml
 
 **Messages:**
 ```
-data/{group_id}-{slug}/messages.md
+data/telegram/groups/{group_id}-{slug}/messages.md
 ```
 
 **Sync state:**
 ```
-data/{group_id}-{slug}/sync_state.yaml
+data/telegram/groups/{group_id}-{slug}/sync_state.yaml
 ```
 
 **Metadata:**
 ```
-data/{group_id}-{slug}/group.yaml
+data/telegram/groups/{group_id}-{slug}/group.yaml
 ```
+
+### DM Data
+
+**DM Manifest:**
+```
+data/telegram/dms/manifest.yaml
+```
+
+**DM Messages:**
+```
+data/telegram/dms/{user_id}-{username}/messages.md
+```
+
+### Migration Note
+
+Legacy data (from v1 structure in `data/{group_id}/` and `dms/telegram/`) is automatically migrated to the unified structure on first sync.
 
 ## Message Format
 

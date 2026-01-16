@@ -289,6 +289,40 @@ class CommunityConfig:
         return self._base_dir
 
     # -------------------------------------------------------------------------
+    # Platform-specific data directories (v2 unified structure)
+    # -------------------------------------------------------------------------
+
+    @property
+    def discord_data_dir(self) -> Path:
+        """Get Discord data root directory (data/discord/)."""
+        return self.data_dir / "discord"
+
+    @property
+    def discord_servers_dir(self) -> Path:
+        """Get Discord servers directory (data/discord/servers/)."""
+        return self.discord_data_dir / "servers"
+
+    @property
+    def discord_dms_dir(self) -> Path:
+        """Get Discord DMs directory (data/discord/dms/)."""
+        return self.discord_data_dir / "dms"
+
+    @property
+    def telegram_data_dir(self) -> Path:
+        """Get Telegram data root directory (data/telegram/)."""
+        return self.data_dir / "telegram"
+
+    @property
+    def telegram_groups_dir(self) -> Path:
+        """Get Telegram groups directory (data/telegram/groups/)."""
+        return self.telegram_data_dir / "groups"
+
+    @property
+    def telegram_dms_dir(self) -> Path:
+        """Get Telegram DMs directory (data/telegram/dms/)."""
+        return self.telegram_data_dir / "dms"
+
+    # -------------------------------------------------------------------------
     # Discord properties
     # -------------------------------------------------------------------------
 
@@ -366,14 +400,20 @@ class CommunityConfig:
         self._config["discord"]["default_server_name"] = server_name
         self.save_config()
 
-    def get_discord_server_data_dir(self, server_id: str) -> Path:
-        """Get data directory for a specific Discord server."""
-        return self.data_dir / server_id
+    def get_discord_server_data_dir(self, server_id: str, server_name: Optional[str] = None) -> Path:
+        """Get data directory for a specific Discord server.
 
-    def get_discord_channel_data_dir(self, server_id: str, channel_name: str) -> Path:
+        Uses unified v2 structure: data/discord/servers/{server_id}-{slug}/
+        """
+        if server_name:
+            slug = self._slugify(server_name)
+            return self.discord_servers_dir / f"{server_id}-{slug}"
+        return self.discord_servers_dir / server_id
+
+    def get_discord_channel_data_dir(self, server_id: str, channel_name: str, server_name: Optional[str] = None) -> Path:
         """Get data directory for a specific Discord channel."""
         safe_name = self._sanitize_filename(channel_name)
-        return self.get_discord_server_data_dir(server_id) / safe_name
+        return self.get_discord_server_data_dir(server_id, server_name) / safe_name
 
     # -------------------------------------------------------------------------
     # Telegram properties
@@ -466,11 +506,14 @@ class CommunityConfig:
     def get_telegram_group_data_dir(
         self, group_id: int, group_name: Optional[str] = None
     ) -> Path:
-        """Get data directory for a specific Telegram group."""
+        """Get data directory for a specific Telegram group.
+
+        Uses unified v2 structure: data/telegram/groups/{group_id}-{slug}/
+        """
         if group_name:
             slug = self._slugify(group_name)
-            return self.data_dir / f"{group_id}-{slug}"
-        return self.data_dir / str(group_id)
+            return self.telegram_groups_dir / f"{group_id}-{slug}"
+        return self.telegram_groups_dir / str(group_id)
 
     # -------------------------------------------------------------------------
     # Persona properties
