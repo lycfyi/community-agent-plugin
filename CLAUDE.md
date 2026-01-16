@@ -2,43 +2,70 @@
 
 Community Agent Plugin Marketplace for Claude Code.
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   community-agent                        │
+│                   (THE BRAIN)                            │
+│                                                          │
+│  - community-manager agent (orchestrates platforms)      │
+│  - community-patterns skill (domain knowledge)           │
+│  - Shared utilities (config, storage, formatting)        │
+└─────────────────────────────────────────────────────────┘
+        │                                    │
+        ▼                                    ▼
+┌───────────────────┐              ┌───────────────────┐
+│ discord-connector │              │telegram-connector │
+│    (HANDS)        │              │    (HANDS)        │
+│                   │              │                   │
+│ discord-init      │              │ telegram-init     │
+│ discord-sync      │              │ telegram-sync     │
+│ discord-read      │              │ telegram-read     │
+│ discord-send      │              │ telegram-send     │
+│ discord-analyze   │              │ telegram-doctor   │
+│ discord-summary   │              │                   │
+│ discord-doctor    │              │                   │
+└───────────────────┘              └───────────────────┘
+```
+
 ## Available Plugins
 
 | Plugin | Description |
 |--------|-------------|
-| `community-agent` | Core shared library (storage, formatting, config) |
-| `discord-connector` | Sync, read, and analyze Discord messages with Claude Code |
-| `telegram-connector` | Sync, read, and analyze Telegram messages with Claude Code |
+| `community-agent` | Orchestrating agent + shared library. Coordinates cross-platform workflows. |
+| `discord-connector` | Skills for syncing, reading, and analyzing Discord messages |
+| `telegram-connector` | Skills for syncing, reading, and analyzing Telegram messages |
 
-## Architecture
+## Plugin Structure
 
 ```
 plugins/
-├── community-agent/         # Core library (no skills)
-│   └── lib/
-│       ├── config.py        # CommunityConfig
-│       ├── storage_base.py  # Storage utilities
-│       ├── markdown_base.py # Formatting utilities
-│       └── rate_limiter_base.py
+├── community-agent/         # THE BRAIN
+│   ├── agents/
+│   │   └── community-manager.md    # Orchestrating agent
+│   ├── skills/
+│   │   └── community-patterns/     # Domain knowledge
+│   └── lib/                        # Shared utilities
 │
-├── discord-connector/       # Discord platform connector
+├── discord-connector/       # HANDS (Discord)
 │   ├── community_agent -> ../community-agent
-│   ├── lib/
-│   ├── tools/
-│   └── skills/              # discord-init, discord-sync, etc.
+│   ├── skills/              # Platform skills
+│   ├── tools/               # Python implementations
+│   └── lib/
 │
-└── telegram-connector/      # Telegram platform connector
+└── telegram-connector/      # HANDS (Telegram)
     ├── community_agent -> ../community-agent
-    ├── lib/
-    ├── tools/
-    └── skills/              # telegram-init, telegram-sync, etc.
+    ├── skills/              # Platform skills
+    ├── tools/               # Python implementations
+    └── lib/
 ```
 
 ## Installation
 
 Install this marketplace in Claude Code:
 ```
-/plugin git@github.com:lycfyi/community-agent-plugin.git
+/plugin marketplace add https://github.com/lycfyi/community-agent-plugin
 ```
 
 Then install individual plugins from the marketplace.
@@ -79,7 +106,8 @@ TELEGRAM_SESSION=your_session_string
 Each plugin is located in `plugins/<plugin-name>/` with its own:
 - `.claude-plugin/plugin.json` - Plugin metadata
 - `CLAUDE.md` - Plugin-specific guidance
-- `skills/` - Available skills (platform connectors only)
+- `agents/` - Agent definitions (community-agent only)
+- `skills/` - Available skills
 - `tools/` - Tool implementations
 - `lib/` - Library code
 

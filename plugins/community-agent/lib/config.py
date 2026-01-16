@@ -55,6 +55,9 @@ class SetupState:
     telegram_credentials_set: bool
     telegram_group_configured: bool
 
+    # Persona configuration
+    persona_configured: bool
+
     # Metadata from config
     setup_complete: bool
     setup_mode: Optional[str]  # "quickstart" or "advanced"
@@ -115,6 +118,20 @@ telegram:
     max_groups: 10
   rate_limits:
     min_interval_ms: 100
+
+# Bot persona (shared across platforms)
+persona:
+  preset: community_manager
+  name: Alex
+  role: Community Manager
+  personality: "Professional, organized, and helpful. Keeps discussions on track."
+  tasks:
+    - Welcome new members
+    - Answer community questions
+    - Summarize discussions
+    - Highlight important announcements
+  communication_style: "Clear and professional, uses bullet points for clarity"
+  background: "Experienced community manager who knows the ins and outs"
 """
 
 
@@ -228,6 +245,7 @@ class CommunityConfig:
             discord_server_configured=bool(self.discord_server_id),
             telegram_credentials_set=self.has_telegram_credentials(),
             telegram_group_configured=bool(self.telegram_default_group_id),
+            persona_configured=self.persona_configured,
             setup_complete=meta.get("setup_complete", False),
             setup_mode=meta.get("setup_mode"),
             last_run_at=last_run_at,
@@ -443,6 +461,73 @@ class CommunityConfig:
             slug = self._slugify(group_name)
             return self.data_dir / f"{group_id}-{slug}"
         return self.data_dir / str(group_id)
+
+    # -------------------------------------------------------------------------
+    # Persona properties
+    # -------------------------------------------------------------------------
+
+    @property
+    def persona(self) -> dict:
+        """Get persona configuration."""
+        return self._config.get("persona", {})
+
+    @property
+    def persona_preset(self) -> str:
+        """Get persona preset name."""
+        return self.persona.get("preset", "community_manager")
+
+    @property
+    def persona_name(self) -> str:
+        """Get persona name."""
+        return self.persona.get("name", "Alex")
+
+    @property
+    def persona_role(self) -> str:
+        """Get persona role."""
+        return self.persona.get("role", "Community Manager")
+
+    @property
+    def persona_configured(self) -> bool:
+        """Check if persona has been configured."""
+        return bool(self.persona.get("name"))
+
+    def set_persona(self, persona_data: dict) -> None:
+        """Set the bot persona.
+
+        Args:
+            persona_data: Dictionary with persona fields
+        """
+        self._config["persona"] = persona_data
+        self.save_config()
+
+    def set_persona_from_preset(self, preset: str) -> None:
+        """Set persona from a preset.
+
+        Args:
+            preset: Preset name (community_manager, friendly_helper, tech_expert)
+        """
+        from .persona import get_preset, get_default_persona
+
+        persona = get_preset(preset)
+        if persona is None:
+            persona = get_default_persona()
+        self.set_persona(persona.to_dict())
+
+    def get_persona_prompt(self) -> str:
+        """Get the persona as a prompt string for LLM context.
+
+        Returns:
+            LLM-ready prompt describing the persona
+        """
+        from .persona import BotPersona
+
+        persona_data = self.persona
+        if not persona_data:
+            from .persona import get_default_persona
+            return get_default_persona().to_prompt()
+
+        persona = BotPersona.from_dict(persona_data)
+        return persona.to_prompt()
 
     # -------------------------------------------------------------------------
     # Utility methods

@@ -35,6 +35,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.config import get_config, ConfigError, SetupError
 from lib.discord_client import DiscordUserClient, DiscordClientError, AuthenticationError
 from community_agent.lib.profile import ensure_profile
+from community_agent.lib.persona import (
+    select_persona_quickstart,
+    select_persona_interactive,
+    get_preset,
+    get_default_persona,
+)
 
 
 def print_welcome(is_first_run: bool, mode: str) -> None:
@@ -97,6 +103,18 @@ async def run_quickstart(config, client) -> int:
 
         # Save configuration
         config.set_default_server(selected["id"], selected["name"])
+
+        # Set default persona (community_manager)
+        persona = select_persona_quickstart()
+        config.set_persona(persona.to_dict())
+
+        print(f"Bot Persona: {persona.name} ({persona.role})")
+        print(f"  Personality: {persona.personality.split('.')[0]}.")
+        print(f"  Tasks: {', '.join(persona.tasks[:3])}")
+        print()
+        print("Tip: Run with --mode advanced to customize persona")
+        print()
+
         config.mark_setup_complete(mode="quickstart")
 
         # Create profile template if it doesn't exist
@@ -176,6 +194,27 @@ async def run_advanced(config, client, args) -> int:
 
         # Save configuration
         config.set_default_server(selected["id"], selected["name"])
+
+        # Persona selection
+        print()
+        if args.persona:
+            # Use specified persona preset
+            persona = get_preset(args.persona)
+            if persona is None:
+                persona = get_default_persona()
+            print(f"Using persona: {persona.name} ({persona.role})")
+        else:
+            # Interactive persona selection
+            persona = select_persona_interactive()
+
+        config.set_persona(persona.to_dict())
+
+        print()
+        print(f"Bot Persona: {persona.name} ({persona.role})")
+        print(f"  Personality: {persona.personality.split('.')[0]}.")
+        print(f"  Style: {persona.communication_style}")
+        print()
+
         config.mark_setup_complete(mode="advanced")
 
         # Create profile template if it doesn't exist
@@ -287,6 +326,11 @@ def parse_args() -> argparse.Namespace:
         "--server",
         metavar="SERVER_ID",
         help="Specific server ID to configure"
+    )
+    parser.add_argument(
+        "--persona",
+        choices=["community_manager", "friendly_helper", "tech_expert", "custom"],
+        help="Bot persona preset (advanced mode only)"
     )
     return parser.parse_args()
 

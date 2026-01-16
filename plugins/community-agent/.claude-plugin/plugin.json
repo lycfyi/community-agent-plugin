@@ -1,7 +1,7 @@
 {
   "name": "community-agent",
-  "version": "1.0.0",
-  "description": "Core shared library for community agent plugins. Provides storage, formatting, and configuration utilities for multi-platform community management.",
+  "version": "1.1.0",
+  "description": "Community management orchestrator with cross-platform coordination. Includes the community-manager agent that coordinates Discord and Telegram skills, plus shared utilities for all platform connectors.",
   "author": {
     "name": "lycfyi",
     "url": "https://github.com/lycfyi"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/lycfyi/community-agent-plugin",
   "repository": "https://github.com/lycfyi/community-agent-plugin",
   "license": "AGPL-3.0",
-  "keywords": ["community", "storage", "config", "core", "library"]
+  "keywords": ["community", "agent", "orchestrator", "discord", "telegram", "management"]
 }
