@@ -47,7 +47,6 @@ from lib.telegram_client import (
     AuthenticationError,
     TelegramClientError,
 )
-from lib.profile import ensure_profile
 
 
 def print_welcome(is_first_run: bool, mode: str) -> None:
@@ -119,9 +118,6 @@ async def run_quickstart(config, client) -> int:
         # Save configuration
         config.set_default_group(selected["id"], selected["name"])
         config.mark_setup_complete(mode="quickstart")
-
-        # Create profile template if it doesn't exist
-        ensure_profile()
 
         print("Configuration saved")
         print()
@@ -218,9 +214,6 @@ async def run_advanced(config, client, args) -> int:
         # Save configuration
         config.set_default_group(selected["id"], selected["name"])
         config.mark_setup_complete(mode="advanced")
-
-        # Create profile template if it doesn't exist
-        ensure_profile()
 
         print("Configuration saved to config/agents.yaml")
         print(f"  Group: {selected['name']} ({selected['id']})")

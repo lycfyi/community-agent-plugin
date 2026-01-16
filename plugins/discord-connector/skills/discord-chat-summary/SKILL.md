@@ -165,32 +165,6 @@ Example filter output: "Filtering to last 7 days (Jan 3-10, 2026)"
 - Topics should include the date they were discussed
 - Include channel context for multi-channel summaries
 
-### Step 7: Update User Profile
-
-After generating the summary, update the user profile to track engagement and learn interests:
-
-```bash
-# Add engagement for servers/channels summarized
-python ${CLAUDE_PLUGIN_ROOT}/tools/discord_profile.py --add-interest "TOPIC_FROM_SUMMARY"
-```
-
-Or programmatically via ProfileManager:
-```python
-from lib.profile import get_profile
-
-profile = get_profile()
-profile.learn_from_summary(
-    servers=["Claude Developers"],      # Servers that were summarized
-    channels=["general", "help"],       # Channels that were summarized
-    topics=["API usage", "new features"]  # Key topics extracted from summary
-)
-```
-
-This allows the profile to:
-- Track which servers/channels user focuses on (engagement scores)
-- Learn interests from topics discussed
-- Log activity for future reference
-
 ## Example Usage
 
 **User:** "Summarize the Discord chats from last week"

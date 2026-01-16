@@ -11,13 +11,14 @@ Community Agent Plugin Marketplace for Claude Code.
 │                                                          │
 │  - community-manager agent (orchestrates platforms)      │
 │  - community-patterns skill (domain knowledge)           │
-│  - Shared utilities (config, storage, formatting)        │
+│  - Persona & profile management (personality, prefs)     │
+│  - Cross-platform coordination & intelligence            │
 └─────────────────────────────────────────────────────────┘
         │                                    │
         ▼                                    ▼
 ┌───────────────────┐              ┌───────────────────┐
 │ discord-connector │              │telegram-connector │
-│    (HANDS)        │              │    (HANDS)        │
+│  (DATA IO ONLY)   │              │  (DATA IO ONLY)   │
 │                   │              │                   │
 │ discord-init      │              │ telegram-init     │
 │ discord-sync      │              │ telegram-sync     │
@@ -29,13 +30,17 @@ Community Agent Plugin Marketplace for Claude Code.
 └───────────────────┘              └───────────────────┘
 ```
 
+**Architecture Principles:**
+- **Connectors = Data IO only**: Read/write messages, sync data, basic analysis
+- **Agent = Brain**: Personality, preferences, recommendations, cross-platform coordination
+
 ## Available Plugins
 
 | Plugin | Description |
 |--------|-------------|
 | `community-agent` | Orchestrating agent + shared library. Coordinates cross-platform workflows. |
-| `discord-connector` | Skills for syncing, reading, and analyzing Discord messages |
-| `telegram-connector` | Skills for syncing, reading, and analyzing Telegram messages |
+| `discord-connector` | Data IO for Discord - sync, read, send messages (no persona/profile) |
+| `telegram-connector` | Data IO for Telegram - sync, read, send messages (no persona/profile) |
 
 ## Plugin Structure
 
@@ -46,21 +51,26 @@ plugins/
 │   │   └── community-manager.md    # Orchestrating agent
 │   ├── skills/
 │   │   └── community-patterns/     # Domain knowledge
-│   └── lib/                        # Shared utilities (source of truth)
+│   └── lib/                        # Shared utilities + persona + profile
+│       ├── config.py              # Configuration management
+│       ├── persona.py             # Bot personality settings
+│       └── profile.py             # User preferences & interests
 │
-├── discord-connector/       # HANDS (Discord) - Self-contained
-│   ├── skills/              # Platform skills
+├── discord-connector/       # DATA IO (Discord) - Self-contained
+│   ├── skills/              # Platform skills (sync, read, send, analyze)
 │   ├── tools/               # Python implementations
-│   └── lib/                 # Includes bundled shared code
+│   └── lib/                 # Bundled config only (no persona/profile)
+│       └── community_config.py    # Config loader
 │
-└── telegram-connector/      # HANDS (Telegram) - Self-contained
-    ├── skills/              # Platform skills
+└── telegram-connector/      # DATA IO (Telegram) - Self-contained
+    ├── skills/              # Platform skills (sync, read, send)
     ├── tools/               # Python implementations
-    └── lib/                 # Includes bundled shared code
+    └── lib/                 # Bundled config only (no persona/profile)
+        └── community_config.py    # Config loader
 ```
 
-Each connector is self-contained with bundled copies of shared utilities (config, profile, persona).
-This ensures plugins work correctly when installed separately.
+Connectors are self-contained with bundled config utilities only.
+Persona and profile management belong to the agent (brain), not connectors (data IO).
 
 ## Installation
 
@@ -117,5 +127,7 @@ Each plugin is located in `plugins/<plugin-name>/` with its own:
 To add a new plugin:
 1. Create a new directory under `plugins/`
 2. Add `.claude-plugin/plugin.json` with plugin metadata
-3. If it's a platform connector, copy shared utilities from `community-agent/lib/` (config, profile, persona)
+3. If it's a platform connector (data IO):
+   - Copy only `community_config.py` from `community-agent/lib/`
+   - Do NOT include persona.py or profile.py (those are brain concerns)
 4. Update `.claude-plugin/marketplace.json` to include your plugin

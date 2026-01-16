@@ -37,7 +37,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from lib.config import get_config, ConfigError, SetupError
 from lib.discord_client import DiscordUserClient, DiscordClientError, AuthenticationError
-from lib.profile import ensure_profile
 
 
 def print_welcome(is_first_run: bool, mode: str) -> None:
@@ -100,9 +99,6 @@ async def run_quickstart(config, client) -> int:
         # Save configuration
         config.set_default_server(selected["id"], selected["name"])
         config.mark_setup_complete(mode="quickstart")
-
-        # Create profile template if it doesn't exist
-        ensure_profile()
 
         print("Configuration saved")
         print()
@@ -181,9 +177,6 @@ async def run_advanced(config, client, args) -> int:
         # Save configuration
         config.set_default_server(selected["id"], selected["name"])
         config.mark_setup_complete(mode="advanced")
-
-        # Create profile template if it doesn't exist
-        ensure_profile()
 
         print("Configuration saved to config/agents.yaml")
         print(f"  Server: {selected['name']} ({selected['id']})")
