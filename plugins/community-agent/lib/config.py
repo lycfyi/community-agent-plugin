@@ -278,6 +278,16 @@ class CommunityConfig:
             path = self._base_dir / path
         return path
 
+    @property
+    def config_path(self) -> Path:
+        """Get path to the agents.yaml config file."""
+        return self._config_dir / "agents.yaml"
+
+    @property
+    def base_dir(self) -> Path:
+        """Get base directory (user's working directory)."""
+        return self._base_dir
+
     # -------------------------------------------------------------------------
     # Discord properties
     # -------------------------------------------------------------------------
