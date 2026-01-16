@@ -109,6 +109,7 @@ class MemberActivity:
 
     member_id: str
     display_name: str
+    server_name: str = ""  # Server name for context
     message_count: int = 0
     channels: Dict[str, int] = field(default_factory=dict)  # channel -> count
     questions: List[ClassifiedMessage] = field(default_factory=list)
@@ -492,6 +493,11 @@ class ProfileExtractor:
         # Load extraction state
         state = ExtractionState.load(platform, server_id) if incremental else ExtractionStateData()
 
+        # Extract server name from directory (e.g., "1092630146143506494-topmediai" -> "topmediai")
+        server_name = server_dir.name
+        if "-" in server_name:
+            server_name = server_name.split("-", 1)[1]  # Get part after first hyphen
+
         # Aggregate activity per member
         member_activity: Dict[str, MemberActivity] = {}
 
@@ -530,6 +536,7 @@ class ProfileExtractor:
                     member_activity[member_id] = MemberActivity(
                         member_id=member_id,
                         display_name=msg.author_name,
+                        server_name=server_name,
                     )
 
                 activity = member_activity[member_id]
@@ -680,8 +687,9 @@ class ProfileExtractor:
             if activity.all_keywords:
                 keywords_str = f"; topics: {', '.join(activity.all_keywords[:5])}"
 
+            server_prefix = f"[{activity.server_name}] " if activity.server_name else ""
             observations.append(
-                f"Active in {channel_str} ({activity.message_count} messages){keywords_str}"
+                f"{server_prefix}Active in {channel_str} ({activity.message_count} messages){keywords_str}"
             )
 
         # 2. Introduction (if present)
