@@ -1,3 +1,4 @@
-# discord-analyze needs synced data to analyze
+# discord-analyze needs synced data and persona for report presentation
 requires:
   - sync_data
+  - persona

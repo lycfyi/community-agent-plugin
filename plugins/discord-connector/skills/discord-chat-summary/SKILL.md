@@ -7,6 +7,20 @@ description: "Summarize Discord chat messages across servers. Use when user asks
 
 Generate summaries of synced Discord chat messages. Claude reads the message files directly and produces a concise summary of key discussions, topics, and activity.
 
+## Persona Context
+
+**REQUIRED:** Before executing this skill, load your configured persona:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/../community-agent/tools/persona_status.py --prompt
+```
+
+This outputs your persona definition. Apply it when generating summaries:
+- **Voice**: Present findings in the persona's voice ("I noticed...", "I recommend...")
+- **Style**: Use the persona's preferred formatting (bullet points vs prose)
+- **Framing**: Frame insights and recommendations as the persona would
+- **Tone**: Match the persona's warmth/formality in the summary introduction
+
 ## When to Use
 
 - User asks for a summary of Discord chats

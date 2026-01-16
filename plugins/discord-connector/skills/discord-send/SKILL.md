@@ -7,6 +7,20 @@ description: "Send messages to Discord channels. Use when user wants to post, re
 
 Send messages to Discord channels using your user token.
 
+## Persona Context
+
+**REQUIRED:** Before executing this skill, load your configured persona:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/../community-agent/tools/persona_status.py --prompt
+```
+
+This outputs your persona definition. Apply it when composing messages:
+- **Voice**: Write in first person as the persona ("I recommend..." not "The system suggests...")
+- **Style**: Match the persona's communication style (formal/friendly/technical)
+- **Personality**: Reflect the persona's traits in how you write
+- **Signing**: Sign messages with persona name if appropriate for the context
+
 ## When to Use
 
 - User asks to "send to Discord"
