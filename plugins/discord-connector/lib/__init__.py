@@ -22,6 +22,41 @@ from .storage import Storage, StorageError, get_storage
 from .global_rate_limiter import GlobalRateLimiter
 from .batched_writer import BatchedWriter
 from .multi_server_sync import MultiServerSyncOrchestrator, MultiServerSyncSummary
+from .slugify import slugify, make_hybrid_name, parse_hybrid_name, extract_id_from_hybrid
+from .member_models import (
+    EngagementTier,
+    MemberBasic,
+    ConnectedAccount,
+    MemberRichProfile,
+    MemberActivity,
+    MemberSnapshot,
+    CurrentMemberList,
+    ChurnedMember,
+    SyncOperation,
+    ServerMetadata,
+)
+from .profile_models import (
+    Observation,
+    ServerMembership,
+    DiscordData,
+    BehavioralData,
+    InferredInterest,
+    DerivedInsights,
+    UnifiedMemberProfile,
+    ProfileIndex,
+)
+from .member_storage import MemberStorage, MemberStorageError, get_member_storage
+from .profile_index import ProfileManager, ProfileIndexError, get_profile_manager
+from .gateway_client import GatewayMemberFetcher, RichProfileFetcher, GatewayClientError
+from .fuzzy_search import (
+    MatchField,
+    MatchReason,
+    SearchResult,
+    SearchQuery,
+    FuzzySearchEngine,
+    search_members,
+    search_basic_members,
+)
 
 __all__ = [
     # Config
@@ -55,4 +90,49 @@ __all__ = [
     # Multi-Server Sync
     "MultiServerSyncOrchestrator",
     "MultiServerSyncSummary",
+    # Slugify
+    "slugify",
+    "make_hybrid_name",
+    "parse_hybrid_name",
+    "extract_id_from_hybrid",
+    # Member Models
+    "EngagementTier",
+    "MemberBasic",
+    "ConnectedAccount",
+    "MemberRichProfile",
+    "MemberActivity",
+    "MemberSnapshot",
+    "CurrentMemberList",
+    "ChurnedMember",
+    "SyncOperation",
+    "ServerMetadata",
+    # Profile Models
+    "Observation",
+    "ServerMembership",
+    "DiscordData",
+    "BehavioralData",
+    "InferredInterest",
+    "DerivedInsights",
+    "UnifiedMemberProfile",
+    "ProfileIndex",
+    # Member Storage
+    "MemberStorage",
+    "MemberStorageError",
+    "get_member_storage",
+    # Profile Index
+    "ProfileManager",
+    "ProfileIndexError",
+    "get_profile_manager",
+    # Gateway Client
+    "GatewayMemberFetcher",
+    "RichProfileFetcher",
+    "GatewayClientError",
+    # Fuzzy Search
+    "MatchField",
+    "MatchReason",
+    "SearchResult",
+    "SearchQuery",
+    "FuzzySearchEngine",
+    "search_members",
+    "search_basic_members",
 ]
