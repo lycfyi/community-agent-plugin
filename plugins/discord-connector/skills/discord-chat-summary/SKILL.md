@@ -7,6 +7,20 @@ description: "Summarize Discord chat messages across servers. Use when user asks
 
 Generate summaries of synced Discord chat messages. Claude reads the message files directly and produces a concise summary of key discussions, topics, and activity.
 
+## Persona Context
+
+**REQUIRED:** Before executing this skill, load your configured persona:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/../community-agent/tools/persona_status.py --prompt
+```
+
+This outputs your persona definition. Apply it when generating summaries:
+- **Voice**: Present findings in the persona's voice ("I noticed...", "I recommend...")
+- **Style**: Use the persona's preferred formatting (bullet points vs prose)
+- **Framing**: Frame insights and recommendations as the persona would
+- **Tone**: Match the persona's warmth/formality in the summary introduction
+
 ## When to Use
 
 - User asks for a summary of Discord chats
@@ -164,32 +178,6 @@ Example filter output: "Filtering to last 7 days (Jan 3-10, 2026)"
 - Period/date range MUST be in the header
 - Topics should include the date they were discussed
 - Include channel context for multi-channel summaries
-
-### Step 7: Update User Profile
-
-After generating the summary, update the user profile to track engagement and learn interests:
-
-```bash
-# Add engagement for servers/channels summarized
-python ${CLAUDE_PLUGIN_ROOT}/tools/discord_profile.py --add-interest "TOPIC_FROM_SUMMARY"
-```
-
-Or programmatically via ProfileManager:
-```python
-from lib.profile import get_profile
-
-profile = get_profile()
-profile.learn_from_summary(
-    servers=["Claude Developers"],      # Servers that were summarized
-    channels=["general", "help"],       # Channels that were summarized
-    topics=["API usage", "new features"]  # Key topics extracted from summary
-)
-```
-
-This allows the profile to:
-- Track which servers/channels user focuses on (engagement scores)
-- Learn interests from topics discussed
-- Log activity for future reference
 
 ## Example Usage
 

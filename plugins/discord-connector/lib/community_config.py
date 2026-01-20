@@ -553,34 +553,8 @@ class CommunityConfig:
         self._config["persona"] = persona_data
         self.save_config()
 
-    def set_persona_from_preset(self, preset: str) -> None:
-        """Set persona from a preset.
-
-        Args:
-            preset: Preset name (community_manager, friendly_helper, tech_expert)
-        """
-        from .persona import get_preset, get_default_persona
-
-        persona = get_preset(preset)
-        if persona is None:
-            persona = get_default_persona()
-        self.set_persona(persona.to_dict())
-
-    def get_persona_prompt(self) -> str:
-        """Get the persona as a prompt string for LLM context.
-
-        Returns:
-            LLM-ready prompt describing the persona
-        """
-        from .persona import BotPersona
-
-        persona_data = self.persona
-        if not persona_data:
-            from .persona import get_default_persona
-            return get_default_persona().to_prompt()
-
-        persona = BotPersona.from_dict(persona_data)
-        return persona.to_prompt()
+    # Note: Persona presets and prompt generation are handled by community-agent.
+    # Connectors only do data IO - persona is a "brain" concern.
 
     # -------------------------------------------------------------------------
     # Utility methods

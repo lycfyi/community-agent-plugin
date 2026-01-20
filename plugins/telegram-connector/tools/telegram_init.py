@@ -27,6 +27,9 @@ Exit Codes:
 
 WARNING: Using a user token may violate Telegram's Terms of Service.
 This is for personal archival and analysis only.
+
+NOTE: This tool only configures Telegram group connection.
+      For bot persona setup, run 'community-init' first.
 """
 
 import argparse
@@ -44,7 +47,6 @@ from lib.telegram_client import (
     AuthenticationError,
     TelegramClientError,
 )
-from community_agent.lib.profile import ensure_profile
 
 
 def print_welcome(is_first_run: bool, mode: str) -> None:
@@ -117,12 +119,11 @@ async def run_quickstart(config, client) -> int:
         config.set_default_group(selected["id"], selected["name"])
         config.mark_setup_complete(mode="quickstart")
 
-        # Create profile template if it doesn't exist
-        ensure_profile()
-
-        print("✓ Configuration saved")
+        print("Configuration saved")
         print()
         print("Next: Run 'telegram-sync' to download messages")
+        print()
+        print("Tip: Run 'community-init' to configure bot persona")
 
         return 0
 
@@ -214,16 +215,15 @@ async def run_advanced(config, client, args) -> int:
         config.set_default_group(selected["id"], selected["name"])
         config.mark_setup_complete(mode="advanced")
 
-        # Create profile template if it doesn't exist
-        ensure_profile()
-
-        print("✓ Configuration saved to config/agents.yaml")
+        print("Configuration saved to config/agents.yaml")
         print(f"  Group: {selected['name']} ({selected['id']})")
         print()
         print("Next steps:")
         print("  1. Sync messages: Run 'telegram-sync'")
         print("  2. Read messages: Run 'telegram-read'")
         print("  3. Or ask Claude: 'Sync my Telegram messages'")
+        print()
+        print("Tip: Run 'community-init' to configure bot persona")
 
         return 0
 
@@ -321,7 +321,8 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Initialize Telegram configuration from your account",
-        epilog="WARNING: Using a user token may violate Telegram's ToS."
+        epilog="WARNING: Using a user token may violate Telegram's ToS. "
+               "For bot persona setup, run 'community-init'."
     )
     parser.add_argument(
         "--mode",

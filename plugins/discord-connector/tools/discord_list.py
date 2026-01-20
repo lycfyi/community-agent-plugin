@@ -3,13 +3,17 @@
 
 Usage:
     python tools/discord_list.py --servers
+    python tools/discord_list.py --servers --json
     python tools/discord_list.py --servers --no-dms
     python tools/discord_list.py --channels SERVER_ID
+    python tools/discord_list.py --channels SERVER_ID --json
     python tools/discord_list.py --dms
+    python tools/discord_list.py --dms --json
 """
 
 import argparse
 import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -19,11 +23,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.discord_client import DiscordUserClient, DiscordClientError, AuthenticationError
 
 
-async def list_servers(include_dms: bool = True) -> None:
+async def list_servers(include_dms: bool = True, output_json: bool = False) -> None:
     """List all accessible servers and optionally DMs."""
     client = DiscordUserClient()
     try:
         guilds = await client.list_guilds()
+        dms = []
+        if include_dms:
+            dms = await client.list_dms()
+
+        if output_json:
+            print(json.dumps({"servers": guilds, "dms": dms if include_dms else []}, indent=2))
+            return
 
         if not guilds:
             print("No servers found. Make sure your account has joined some servers.")
@@ -39,34 +50,36 @@ async def list_servers(include_dms: bool = True) -> None:
             print("  python tools/discord_list.py --channels SERVER_ID")
 
         # List DMs if requested
-        if include_dms:
-            dms = await client.list_dms()
-            if dms:
-                print(f"\n\nFound {len(dms)} DM(s):\n")
-                print(f"{'Channel ID':<20} {'User ID':<20} {'Username':<20} {'Display Name':<20}")
-                print("-" * 80)
+        if include_dms and dms:
+            print(f"\n\nFound {len(dms)} DM(s):\n")
+            print(f"{'Channel ID':<20} {'User ID':<20} {'Username':<20} {'Display Name':<20}")
+            print("-" * 80)
 
-                for dm in dms:
-                    channel_id = dm['id']
-                    user_id = dm['user_id']
-                    username = dm.get('username', '-')
-                    display_name = dm.get('display_name', '-')[:20]
-                    print(f"{channel_id:<20} {user_id:<20} {username:<20} {display_name:<20}")
+            for dm in dms:
+                channel_id = dm['id']
+                user_id = dm['user_id']
+                username = dm.get('username', '-')
+                display_name = dm.get('display_name', '-')[:20]
+                print(f"{channel_id:<20} {user_id:<20} {username:<20} {display_name:<20}")
 
-                print("\nTo sync DMs:")
-                print("  python tools/discord_sync.py --dm CHANNEL_ID")
-            elif guilds:
-                print("\n(No DMs found. Use --no-dms to skip this check)")
+            print("\nTo sync DMs:")
+            print("  python tools/discord_sync.py --dm CHANNEL_ID")
+        elif guilds and include_dms:
+            print("\n(No DMs found. Use --no-dms to skip this check)")
 
     finally:
         await client.close()
 
 
-async def list_dms() -> None:
+async def list_dms(output_json: bool = False) -> None:
     """List all DM channels."""
     client = DiscordUserClient()
     try:
         dms = await client.list_dms()
+
+        if output_json:
+            print(json.dumps({"dms": dms}, indent=2))
+            return
 
         if not dms:
             print("No DMs found.")
@@ -90,11 +103,15 @@ async def list_dms() -> None:
         await client.close()
 
 
-async def list_channels(server_id: str) -> None:
+async def list_channels(server_id: str, output_json: bool = False) -> None:
     """List channels in a server."""
     client = DiscordUserClient()
     try:
         channels = await client.list_channels(server_id)
+
+        if output_json:
+            print(json.dumps({"server_id": server_id, "channels": channels}, indent=2))
+            return
 
         if not channels:
             print(f"No text channels found in server {server_id}.")
@@ -149,16 +166,23 @@ def main():
         help="Exclude DMs when listing servers"
     )
 
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="output_json",
+        help="Output in JSON format"
+    )
+
     args = parser.parse_args()
 
     try:
         if args.servers:
             include_dms = not args.no_dms
-            asyncio.run(list_servers(include_dms=include_dms))
+            asyncio.run(list_servers(include_dms=include_dms, output_json=args.output_json))
         elif args.channels:
-            asyncio.run(list_channels(args.channels))
+            asyncio.run(list_channels(args.channels, output_json=args.output_json))
         elif args.dms:
-            asyncio.run(list_dms())
+            asyncio.run(list_dms(output_json=args.output_json))
 
     except AuthenticationError as e:
         print(f"Authentication Error: {e}", file=sys.stderr)

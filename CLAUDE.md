@@ -2,43 +2,81 @@
 
 Community Agent Plugin Marketplace for Claude Code.
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   community-agent                        │
+│                   (THE BRAIN)                            │
+│                                                          │
+│  - community-manager agent (orchestrates platforms)      │
+│  - community-patterns skill (domain knowledge)           │
+│  - Persona & profile management (personality, prefs)     │
+│  - Cross-platform coordination & intelligence            │
+└─────────────────────────────────────────────────────────┘
+        │                                    │
+        ▼                                    ▼
+┌───────────────────┐              ┌───────────────────┐
+│ discord-connector │              │telegram-connector │
+│  (DATA IO ONLY)   │              │  (DATA IO ONLY)   │
+│                   │              │                   │
+│ discord-init      │              │ telegram-init     │
+│ discord-sync      │              │ telegram-sync     │
+│ discord-read      │              │ telegram-read     │
+│ discord-send      │              │ telegram-send     │
+│ discord-analyze   │              │ telegram-doctor   │
+│ discord-summary   │              │                   │
+│ discord-doctor    │              │                   │
+└───────────────────┘              └───────────────────┘
+```
+
+**Architecture Principles:**
+- **Connectors = Data IO only**: Read/write messages, sync data, basic analysis
+- **Agent = Brain**: Personality, preferences, recommendations, cross-platform coordination
+
 ## Available Plugins
 
 | Plugin | Description |
 |--------|-------------|
-| `community-agent` | Core shared library (storage, formatting, config) |
-| `discord-connector` | Sync, read, and analyze Discord messages with Claude Code |
-| `telegram-connector` | Sync, read, and analyze Telegram messages with Claude Code |
+| `community-agent` | Orchestrating agent + shared library. Coordinates cross-platform workflows. |
+| `discord-connector` | Data IO for Discord - sync, read, send messages (no persona/profile) |
+| `telegram-connector` | Data IO for Telegram - sync, read, send messages (no persona/profile) |
 
-## Architecture
+## Plugin Structure
 
 ```
 plugins/
-├── community-agent/         # Core library (no skills)
-│   └── lib/
-│       ├── config.py        # CommunityConfig
-│       ├── storage_base.py  # Storage utilities
-│       ├── markdown_base.py # Formatting utilities
-│       └── rate_limiter_base.py
+├── community-agent/         # THE BRAIN
+│   ├── agents/
+│   │   └── community-manager.md    # Orchestrating agent
+│   ├── skills/
+│   │   └── community-patterns/     # Domain knowledge
+│   └── lib/                        # Shared utilities + persona + profile
+│       ├── config.py              # Configuration management
+│       ├── persona.py             # Bot personality settings
+│       └── profile.py             # User preferences & interests
 │
-├── discord-connector/       # Discord platform connector
-│   ├── community_agent -> ../community-agent
-│   ├── lib/
-│   ├── tools/
-│   └── skills/              # discord-init, discord-sync, etc.
+├── discord-connector/       # DATA IO (Discord) - Self-contained
+│   ├── skills/              # Platform skills (sync, read, send, analyze)
+│   ├── tools/               # Python implementations
+│   └── lib/                 # Bundled config only (no persona/profile)
+│       └── community_config.py    # Config loader
 │
-└── telegram-connector/      # Telegram platform connector
-    ├── community_agent -> ../community-agent
-    ├── lib/
-    ├── tools/
-    └── skills/              # telegram-init, telegram-sync, etc.
+└── telegram-connector/      # DATA IO (Telegram) - Self-contained
+    ├── skills/              # Platform skills (sync, read, send)
+    ├── tools/               # Python implementations
+    └── lib/                 # Bundled config only (no persona/profile)
+        └── community_config.py    # Config loader
 ```
+
+Connectors are self-contained with bundled config utilities only.
+Persona and profile management belong to the agent (brain), not connectors (data IO).
 
 ## Installation
 
 Install this marketplace in Claude Code:
 ```
-/plugin git@github.com:lycfyi/community-agent-plugin.git
+/plugin marketplace add https://github.com/lycfyi/community-agent-plugin
 ```
 
 Then install individual plugins from the marketplace.
@@ -55,7 +93,7 @@ data_dir: "./data"
 discord:
   retention_days: 30
   sync_limits:
-    max_messages_per_channel: 500
+    max_messages_per_channel: 1000
     ...
 
 # Telegram settings
@@ -79,16 +117,17 @@ TELEGRAM_SESSION=your_session_string
 Each plugin is located in `plugins/<plugin-name>/` with its own:
 - `.claude-plugin/plugin.json` - Plugin metadata
 - `CLAUDE.md` - Plugin-specific guidance
-- `skills/` - Available skills (platform connectors only)
+- `agents/` - Agent definitions (community-agent only)
+- `skills/` - Available skills
 - `tools/` - Tool implementations
-- `lib/` - Library code
-
-Platform connectors depend on `community-agent` via symlink.
+- `lib/` - Library code (connectors include bundled shared utilities)
 
 ## Contributing
 
 To add a new plugin:
 1. Create a new directory under `plugins/`
 2. Add `.claude-plugin/plugin.json` with plugin metadata
-3. If it's a platform connector, add symlink: `community_agent -> ../community-agent`
+3. If it's a platform connector (data IO):
+   - Copy only `community_config.py` from `community-agent/lib/`
+   - Do NOT include persona.py or profile.py (those are brain concerns)
 4. Update `.claude-plugin/marketplace.json` to include your plugin

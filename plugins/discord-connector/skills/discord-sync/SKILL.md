@@ -22,21 +22,10 @@ Syncs messages from Discord servers to local Markdown files for reading and anal
 
 | User Says | Default Action |
 |-----------|----------------|
-| "sync my Discord" | Sync recommended servers from profile (use discord_recommend.py) |
-| "sync those active ones" | Pick top 3 from recommendations |
+| "sync my Discord" | Sync the configured default server from agents.yaml |
 | "sync [server name]" | Find server by name, sync with 7 days default |
 | No --days specified | Default to 7 days |
-| "sync everything" | Sync all recommended, 30 days |
-
-**Get smart recommendations:**
-```bash
-python ${CLAUDE_PLUGIN_ROOT}/tools/discord_recommend.py --json
-```
-
-This returns servers sorted by:
-1. `priority_servers` from config (highest)
-2. Matches against `profile.interests` and `profile.watch_keywords`
-3. Member count heuristics (if no profile configured)
+| "sync everything" | List available servers and ask user to pick |
 
 **Only ask for clarification when:**
 - User's server name matches multiple servers

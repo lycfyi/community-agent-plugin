@@ -74,6 +74,11 @@ class StorageError(Exception):
 class Storage:
     """Storage service for Discord sync data."""
 
+    # Storage structure version
+    # v1: Legacy - data/{server_id}/, dms/discord/{user_id}/
+    # v2: Unified - data/discord/servers/{server_id}/, data/discord/dms/{user_id}/
+    STORAGE_VERSION = 2
+
     def __init__(self, base_dir: Optional[Path] = None):
         """Initialize storage.
 
@@ -84,8 +89,148 @@ class Storage:
             config = get_config()
             base_dir = config.data_dir
         self._base_dir = Path(base_dir)
-        # DMs go to a separate root directory
-        self._dm_base_dir = Path(base_dir).parent / "dms" / "discord"
+
+        # Detect storage structure version and set paths accordingly
+        self._storage_version = self._detect_storage_version()
+
+        if self._storage_version >= 2:
+            # New unified structure: data/discord/servers/, data/discord/dms/
+            self._servers_dir = self._base_dir / "discord" / "servers"
+            self._dm_base_dir = self._base_dir / "discord" / "dms"
+        else:
+            # Legacy structure: data/{server_id}/, dms/discord/{user_id}/
+            self._servers_dir = self._base_dir
+            self._dm_base_dir = self._base_dir.parent / "dms" / "discord"
+
+    def _detect_storage_version(self) -> int:
+        """Detect current storage structure version.
+
+        Returns:
+            1 = Legacy structure (data/{server_id}/, dms/discord/)
+            2 = Unified structure (data/discord/servers/, data/discord/dms/)
+        """
+        # Check for new unified structure
+        new_structure = self._base_dir / "discord" / "servers"
+        if new_structure.exists():
+            return 2
+
+        # Check for legacy DM path
+        legacy_dm = self._base_dir.parent / "dms" / "discord"
+        if legacy_dm.exists():
+            return 1
+
+        # Check for any server directories in legacy location
+        if self._base_dir.exists():
+            for item in self._base_dir.iterdir():
+                if item.is_dir() and not item.name.startswith('.') and item.name != "discord":
+                    # Check if this looks like a server dir (has sync_state.yaml)
+                    if (item / "sync_state.yaml").exists() or (item / "server.yaml").exists():
+                        return 1
+
+        # Fresh install - use new structure
+        return 2
+
+    def needs_migration(self) -> bool:
+        """Check if migration to v2 structure is needed.
+
+        Returns:
+            True if legacy data exists that should be migrated
+        """
+        return self._storage_version < 2
+
+    def migrate_to_v2(self, dry_run: bool = False) -> dict:
+        """Migrate from legacy structure to unified v2 structure.
+
+        Args:
+            dry_run: If True, only report what would be migrated
+
+        Returns:
+            Migration report dict with servers_migrated, dms_migrated, errors
+        """
+        import shutil
+
+        report = {
+            "servers_migrated": [],
+            "dms_migrated": [],
+            "errors": [],
+            "dry_run": dry_run,
+        }
+
+        if self._storage_version >= 2:
+            return {"status": "already_migrated", **report}
+
+        # Target directories for v2 structure
+        new_servers_dir = self._base_dir / "discord" / "servers"
+        new_dm_dir = self._base_dir / "discord" / "dms"
+
+        # Ensure target directories exist
+        if not dry_run:
+            new_servers_dir.mkdir(parents=True, exist_ok=True)
+            new_dm_dir.mkdir(parents=True, exist_ok=True)
+
+        # Migrate servers from data/{server_id}/ to data/discord/servers/{server_id}/
+        legacy_servers_dir = self._base_dir
+        if legacy_servers_dir.exists():
+            for item in legacy_servers_dir.iterdir():
+                if not item.is_dir() or item.name.startswith('.') or item.name == "discord":
+                    continue
+                # Check if this looks like a server dir
+                if (item / "sync_state.yaml").exists() or (item / "server.yaml").exists():
+                    new_path = new_servers_dir / item.name
+                    report["servers_migrated"].append({
+                        "old": str(item),
+                        "new": str(new_path)
+                    })
+                    if not dry_run:
+                        try:
+                            shutil.move(str(item), str(new_path))
+                        except Exception as e:
+                            report["errors"].append(f"Failed to move server {item.name}: {e}")
+
+        # Migrate DMs from dms/discord/{user_id}/ to data/discord/dms/{user_id}/
+        legacy_dm_dir = self._base_dir.parent / "dms" / "discord"
+        if legacy_dm_dir.exists():
+            for item in legacy_dm_dir.iterdir():
+                if not item.is_dir() or item.name.startswith('.'):
+                    continue
+                new_path = new_dm_dir / item.name
+                report["dms_migrated"].append({
+                    "old": str(item),
+                    "new": str(new_path)
+                })
+                if not dry_run:
+                    try:
+                        shutil.move(str(item), str(new_path))
+                    except Exception as e:
+                        report["errors"].append(f"Failed to move DM {item.name}: {e}")
+
+            # Clean up legacy dms/discord/ and dms/ if empty
+            if not dry_run:
+                try:
+                    # Remove legacy DM manifest if present
+                    legacy_manifest = legacy_dm_dir / "manifest.yaml"
+                    if legacy_manifest.exists():
+                        legacy_manifest.unlink()
+
+                    # Try to remove empty directories
+                    if not any(legacy_dm_dir.iterdir()):
+                        legacy_dm_dir.rmdir()
+                        dms_parent = legacy_dm_dir.parent
+                        if not any(dms_parent.iterdir()):
+                            dms_parent.rmdir()
+                except Exception:
+                    pass  # Non-critical cleanup failure
+
+        # Update internal state after migration
+        if not dry_run and not report["errors"]:
+            self._storage_version = 2
+            self._servers_dir = new_servers_dir
+            self._dm_base_dir = new_dm_dir
+            # Regenerate manifests at new locations
+            self.update_manifest()
+            self.update_dm_manifest()
+
+        return {"status": "completed" if not dry_run else "dry_run", **report}
 
     def _ensure_dir(self, path: Path):
         """Ensure a directory exists."""
@@ -123,17 +268,18 @@ class Storage:
             Path to server directory
         """
         # Try to find existing directory first (may already have slug)
-        for existing in self._base_dir.glob(f"{server_id}*"):
-            if existing.is_dir():
-                return existing
+        if self._servers_dir.exists():
+            for existing in self._servers_dir.glob(f"{server_id}*"):
+                if existing.is_dir():
+                    return existing
 
         # Build new directory name with slug
         if server_name:
             slug = self._slugify(server_name)
-            return self._base_dir / f"{server_id}-{slug}"
+            return self._servers_dir / f"{server_id}-{slug}"
 
         # Fallback to just server_id
-        return self._base_dir / server_id
+        return self._servers_dir / server_id
 
     # === Sync State ===
 
@@ -678,12 +824,16 @@ class Storage:
         self._ensure_dir(self._base_dir)
         manifest_path = self._base_dir / "manifest.yaml"
 
-        # Scan all server directories
+        # Scan all server directories (from _servers_dir, not _base_dir)
         servers = []
         total_messages = 0
         total_channels = 0
 
-        for server_dir in self._base_dir.iterdir():
+        # Ensure servers dir exists before iterating
+        if not self._servers_dir.exists():
+            self._ensure_dir(self._servers_dir)
+
+        for server_dir in self._servers_dir.iterdir():
             if not server_dir.is_dir():
                 continue
 
@@ -728,7 +878,7 @@ class Storage:
                     "id": channel_info.get("id"),
                     "message_count": msg_count,
                     "last_sync": channel_info.get("last_sync_at"),
-                    "path": f"{server_dir.name}/{channel_key}/messages.md"
+                    "path": f"discord/servers/{server_dir.name}/{channel_key}/messages.md"
                 }
 
                 # Add date range if available
@@ -759,7 +909,7 @@ class Storage:
             server_entry = {
                 "name": sync_state.get("server_name") or server_meta.get("name"),
                 "id": sync_state.get("server_id") or server_meta.get("id"),
-                "directory": server_dir.name,
+                "directory": f"discord/servers/{server_dir.name}",
                 "member_count": server_meta.get("member_count"),
                 "icon": server_meta.get("icon"),
                 "last_sync": sync_state.get("last_sync"),

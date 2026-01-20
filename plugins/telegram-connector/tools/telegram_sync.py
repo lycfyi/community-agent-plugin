@@ -419,6 +419,19 @@ async def main(args: argparse.Namespace) -> int:
 
     storage = get_storage()
 
+    # Check for storage migration (v1 -> v2 unified structure)
+    if storage.needs_migration():
+        print("Detected legacy storage structure. Migrating to unified structure...")
+        report = storage.migrate_to_v2()
+        if report.get("errors"):
+            print(f"Migration completed with {len(report['errors'])} errors:")
+            for err in report["errors"]:
+                print(f"  - {err}")
+        else:
+            groups = len(report.get("groups_migrated", []))
+            dms = len(report.get("dms_migrated", []))
+            print(f"Migration complete: {groups} groups, {dms} DMs moved to data/telegram/")
+
     # Connect to Telegram
     print("Connecting to Telegram...")
     client = TelegramUserClient()

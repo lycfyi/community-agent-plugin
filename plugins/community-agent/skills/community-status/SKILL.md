@@ -68,6 +68,18 @@ Setup: Complete (quickstart mode)
 - ○ Partially configured (needs init)
 - ✗ Not configured
 
+## Bootstrap Trigger
+
+**IMPORTANT:** Before showing status, check if persona is configured:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/tools/persona_status.py --json
+```
+
+If `"configured": false`, **do not just show status**. Instead, initiate the Bootstrap Ritual (see CLAUDE.md) to help the user set up their agent identity through a friendly conversation.
+
+Only show the status output after persona setup is complete.
+
 ## Next Steps
 
 If platforms show issues:

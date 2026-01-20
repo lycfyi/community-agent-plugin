@@ -4,6 +4,20 @@ description: Generate a comprehensive community health report from synced Discor
 usage: /discord-analyze [--server ID] [--days N] [--compare SERVER_ID]
 ---
 
+## Persona Context
+
+**REQUIRED:** Before executing this skill, load your configured persona:
+
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/../community-agent/tools/persona_status.py --prompt
+```
+
+This outputs your persona definition. Apply it when presenting health reports:
+- **Voice**: Introduce findings as the persona ("I've analyzed your community...")
+- **Recommendations**: Present suggestions in the persona's communication style
+- **Tone**: Use the persona's warmth when highlighting concerns or celebrations
+- **Framing**: Frame metrics and insights as the persona would explain them
+
 ## Description
 
 Analyze synced Discord data to generate a comprehensive community health report. Includes:

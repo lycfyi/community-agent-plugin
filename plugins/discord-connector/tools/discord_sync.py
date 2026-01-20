@@ -1006,6 +1006,20 @@ def main():
         config = get_config()
         server_id = args.server or config.server_id
 
+        # Check for storage migration (v1 -> v2 unified structure)
+        storage = get_storage()
+        if storage.needs_migration():
+            print("Detected legacy storage structure. Migrating to unified structure...")
+            report = storage.migrate_to_v2()
+            if report.get("errors"):
+                print(f"Migration completed with {len(report['errors'])} errors:")
+                for err in report["errors"]:
+                    print(f"  - {err}")
+            else:
+                servers = len(report.get("servers_migrated", []))
+                dms = len(report.get("dms_migrated", []))
+                print(f"Migration complete: {servers} servers, {dms} DMs moved to data/discord/")
+
         # Mode 1: Sync specific DM only
         if args.dm_channel_id:
             asyncio.run(sync_specific_dm(

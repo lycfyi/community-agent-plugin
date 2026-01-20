@@ -2,20 +2,42 @@
 
 A Claude Code plugin marketplace for community management tools. Sync and analyze Discord & Telegram messages directly from Claude Code.
 
-## Prerequisites
+## Quick Start
 
-- Claude Code CLI
-- Python 3.11+
-- Discord account (for discord-connector)
-- Telegram account (for telegram-connector)
-
-## Install
+### 1. Install the Plugin
 
 ```bash
 /plugin marketplace add https://github.com/lycfyi/community-agent-plugin
 ```
 
 Then select the plugin(s) you want to install from the marketplace.
+
+### 2. Set Up Your First Connector
+
+**For Discord:**
+```
+"Set up Discord sync for my account"
+```
+
+**For Telegram:**
+```
+"Set up Telegram sync for my account"
+```
+
+### 3. Start Using
+
+```
+"Sync my Discord messages"
+"Summarize what's happening in my community"
+"Analyze community health"
+```
+
+## Prerequisites
+
+- Claude Code CLI
+- Python 3.11+
+- Discord account (for discord-connector)
+- Telegram account (for telegram-connector)
 
 ## Demo
 
@@ -27,17 +49,53 @@ Then select the plugin(s) you want to install from the marketplace.
 
 ![Active Members](assets/demo2.png)
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   community-agent                        │
+│                   (THE BRAIN)                            │
+│                                                          │
+│  Orchestrating agent that coordinates cross-platform     │
+│  workflows using platform connectors as "hands"          │
+└─────────────────────────────────────────────────────────┘
+        │                                    │
+        ▼                                    ▼
+┌───────────────────┐              ┌───────────────────┐
+│ discord-connector │              │telegram-connector │
+│    (HANDS)        │              │    (HANDS)        │
+│                   │              │                   │
+│ Platform-specific │              │ Platform-specific │
+│ skills for Discord│              │ skills for Telegram│
+└───────────────────┘              └───────────────────┘
+```
+
 ## Available Plugins
 
 | Plugin | Description |
 |--------|-------------|
-| `community-agent` | Core shared library (auto-installed with connectors) |
-| `discord-connector` | Sync, read, and analyze Discord messages |
-| `telegram-connector` | Sync, read, and analyze Telegram messages |
+| `community-agent` | Orchestrating agent + shared library. Coordinates cross-platform workflows. |
+| `discord-connector` | Skills for syncing, reading, and analyzing Discord messages |
+| `telegram-connector` | Skills for syncing, reading, and analyzing Telegram messages |
 
 ---
 
-### discord-connector
+## community-agent
+
+The brain of the system. Provides:
+
+- **community-manager agent** - Coordinates cross-platform workflows
+- **community-patterns skill** - Domain knowledge for community management
+- **Shared utilities** - Config, storage, formatting used by all connectors
+
+**Example conversations:**
+- "Sync all my communities" (coordinates Discord + Telegram)
+- "Summarize activity across all platforms"
+- "Send announcement to all my communities"
+
+---
+
+## discord-connector
 
 Sync, read, and analyze Discord messages directly from Claude Code.
 
@@ -49,6 +107,8 @@ Sync, read, and analyze Discord messages directly from Claude Code.
 | `discord-read`         | Read and search synced messages                    |
 | `discord-send`         | Send messages to Discord channels                  |
 | `discord-chat-summary` | AI-powered summary of Discord conversations        |
+| `discord-analyze`      | Generate community health reports with metrics     |
+| `discord-doctor`       | Diagnose configuration issues                      |
 
 **Example conversations:**
 
@@ -57,6 +117,7 @@ Sync, read, and analyze Discord messages directly from Claude Code.
 - "Sync the last 7 days of messages from all servers"
 - "Summarize what's been happening in XXX Server"
 - "Search for messages mentioning 'bug report'"
+- "Analyze community health for my Discord server"
 - "Draft a self-intro for me and send it to proper discord server and channels"
 
 **Getting your Discord token:**
@@ -67,17 +128,18 @@ Sync, read, and analyze Discord messages directly from Claude Code.
 
 ---
 
-### telegram-connector
+## telegram-connector
 
 Sync, read, and analyze Telegram messages directly from Claude Code.
 
-| Skill           | Purpose                                      |
-| --------------- | -------------------------------------------- |
-| `telegram-init` | Initialize Telegram connection and config    |
-| `telegram-list` | List accessible groups and forum topics      |
-| `telegram-sync` | Sync messages to local Markdown storage      |
-| `telegram-read` | Read and search synced messages              |
-| `telegram-send` | Send messages to Telegram groups             |
+| Skill            | Purpose                                      |
+| ---------------- | -------------------------------------------- |
+| `telegram-init`  | Initialize Telegram connection and config    |
+| `telegram-list`  | List accessible groups and forum topics      |
+| `telegram-sync`  | Sync messages to local Markdown storage      |
+| `telegram-read`  | Read and search synced messages              |
+| `telegram-send`  | Send messages to Telegram groups             |
+| `telegram-doctor`| Diagnose configuration issues                |
 
 **Example conversations:**
 
@@ -116,6 +178,7 @@ your-project/
     ├── {server_id}-{slug}/        # Discord servers
     │   ├── server.yaml
     │   ├── sync_state.yaml
+    │   ├── health-report.md       # Health analysis (if generated)
     │   └── {channel}/
     │       └── messages.md
     └── {group_id}-{slug}/         # Telegram groups
@@ -124,27 +187,26 @@ your-project/
         └── messages.md
 ```
 
-## Architecture
+## Plugin Structure
 
 ```
 plugins/
-├── community-agent/         # Core shared library
+├── community-agent/         # THE BRAIN
+│   ├── agents/
+│   │   └── community-manager.md    # Orchestrating agent
+│   ├── skills/
+│   │   └── community-patterns/     # Domain knowledge
+│   └── lib/                        # Shared utilities
+│
+├── discord-connector/       # HANDS (Discord)
+│   ├── skills/              # Platform skills
+│   ├── tools/               # Python implementations
 │   └── lib/
-│       ├── config.py        # Unified configuration
-│       ├── storage_base.py  # Storage utilities
-│       └── markdown_base.py # Formatting utilities
 │
-├── discord-connector/       # Discord platform connector
-│   ├── community_agent/     # Symlink to core library
-│   ├── lib/
-│   ├── tools/
-│   └── skills/
-│
-└── telegram-connector/      # Telegram platform connector
-    ├── community_agent/     # Symlink to core library
-    ├── lib/
-    ├── tools/
-    └── skills/
+└── telegram-connector/      # HANDS (Telegram)
+    ├── skills/              # Platform skills
+    ├── tools/               # Python implementations
+    └── lib/
 ```
 
 ## License
