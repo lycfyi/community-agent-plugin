@@ -152,13 +152,29 @@ Sync, read, and analyze Telegram messages directly from Claude Code.
 **Getting your Telegram credentials:**
 
 1. Get API credentials from https://my.telegram.org/apps
-2. Generate a session string: `python plugins/telegram-connector/scripts/generate_session.py`
+2. Generate a session string (see important note below)
 3. Add to `.env`:
    ```
    TELEGRAM_API_ID=your_api_id
    TELEGRAM_API_HASH=your_api_hash
    TELEGRAM_SESSION=your_session_string
    ```
+
+**⚠️ Important: Run session generation directly in your terminal**
+
+Telegram verification codes expire in ~2-5 minutes. You **must** run the session generation script directly in your terminal (not through Claude Code chat) to enter the code immediately when you receive it:
+
+```bash
+# Run this directly in your terminal
+python plugins/telegram-connector/scripts/generate_session.py
+
+# Enter your phone number when prompted
+# Enter the verification code IMMEDIATELY when you receive it via SMS/Telegram
+```
+
+Why? The Claude Code chat workflow adds latency (typing the code → Claude processing → script execution), which often causes the code to expire before it reaches Telegram's API. Running directly in terminal allows immediate input.
+
+**For users in regions where Telegram is blocked:** Ensure your VPN connection is stable before starting, as network latency can contribute to code expiration.
 
 > **Warning:** Using a user token may violate Telegram's Terms of Service. This tool is intended for personal archival and analysis only. Use at your own risk.
 
