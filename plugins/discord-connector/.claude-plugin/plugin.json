@@ -1,6 +1,6 @@
 {
   "name": "discord-connector",
-  "version": "1.4.0-rc1",
+  "version": "1.4.0-rc8",
   "description": "Sync, read, and analyze Discord messages with Claude Code. Includes skills for message syncing, channel browsing, and chat summarization.",
   "author": {
     "name": "lycfyi",

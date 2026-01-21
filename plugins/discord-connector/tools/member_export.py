@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from lib.member_storage import get_member_storage
+from lib.slugify import slugify
 
 
 def export_csv(members: list, output_path: Path, include_profiles: bool = False) -> None:
@@ -218,13 +219,14 @@ def main():
     if args.output:
         output_path = Path(args.output)
     else:
-        # Auto-generate path
+        # Auto-generate path with server slug for human-readability
+        server_slug = slugify(current.server_name)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         export_dir = Path("reports/discord/exports")
         export_dir.mkdir(parents=True, exist_ok=True)
 
         ext = {"csv": "csv", "json": "json", "md": "md"}[args.format]
-        output_path = export_dir / f"members_{timestamp}.{ext}"
+        output_path = export_dir / f"members_{server_slug}_{timestamp}.{ext}"
 
     # Export
     print(f"Exporting members from {current.server_name}...")

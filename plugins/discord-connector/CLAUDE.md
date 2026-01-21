@@ -168,9 +168,40 @@ Reports include:
 ## Prerequisites
 
 User must have:
-- `.env` with `DISCORD_USER_TOKEN` set
 - Python 3.11+ installed
+- `discord.py-self` library installed
+- `.env` with `DISCORD_USER_TOKEN` set
+
+## Library Setup
+
+This plugin uses `discord.py-self` for user token authentication:
+
+```bash
+pip install discord.py-self>=2.0.0
+```
+
+**For bot token support** (fast member syncing with Gateway Intents), use the `discord-bot` plugin instead.
+
+## Token Configuration
+
+### .env Configuration
+
+```bash
+# User token (required for this plugin)
+DISCORD_USER_TOKEN=your_user_token_here
+```
+
+Get your user token from: https://discordhunt.com/articles/how-to-get-discord-user-token
 
 ## Warning
 
 Using a user token may violate Discord's Terms of Service. This is for personal archival and analysis only.
+
+## Bot Token Alternative
+
+For server administrators who need:
+- Fast member syncing (100k+ members via Gateway Intents)
+- Official API compliance
+- No ToS concerns
+
+Use the `discord-bot` plugin instead, which uses `discord.py` with bot tokens.

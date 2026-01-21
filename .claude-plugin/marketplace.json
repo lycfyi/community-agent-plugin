@@ -62,6 +62,24 @@
         "analysis"
       ],
       "source": "./plugins/telegram-connector"
+    },
+    {
+      "name": "discord-bot",
+      "description": "Discord bot token plugin for fast member syncing via HTTP API. Works with discord.py-self installed. Requires a bot token with SERVER MEMBERS INTENT enabled.",
+      "version": "1.4.0-rc2",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/community-agent-plugin",
+      "tags": [
+        "discord",
+        "bot",
+        "members",
+        "gateway",
+        "intents"
+      ],
+      "source": "./plugins/discord-bot"
     }
   ]
 }

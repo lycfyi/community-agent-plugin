@@ -131,7 +131,11 @@ def parse_date_string(date_str: str) -> datetime:
     # Try ISO format
     try:
         # Try with time
-        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        # Ensure timezone-aware (date-only ISO strings return naive datetime)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
     except ValueError:
         pass
 

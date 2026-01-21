@@ -1,4 +1,15 @@
-discord.py-self>=2.0.0
+# Discord library - CHOOSE ONE based on your token type:
+#
+# For USER tokens (self-bot, rich profiles):
+#   pip install discord.py-self>=2.0.0
+#
+# For BOT tokens (official API, member intents):
+#   pip install discord.py>=2.0.0
+#
+# NOTE: These libraries cannot be installed together (same namespace).
+# The plugin auto-detects which library is installed at runtime.
+
+# Core dependencies
 pyyaml>=6.0
 python-dotenv>=1.0.0
 aiohttp>=3.9.0

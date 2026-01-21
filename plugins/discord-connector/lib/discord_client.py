@@ -1,4 +1,9 @@
-"""Discord user token client with self_bot=True."""
+"""Discord client supporting both bot and user tokens.
+
+Supports both discord.py (official) and discord.py-self libraries:
+- discord.py: For bot tokens with Gateway Intents
+- discord.py-self: For user tokens (self-bot)
+"""
 
 import asyncio
 from datetime import datetime, timedelta, timezone
@@ -9,6 +14,12 @@ from discord.ext import commands
 
 from .config import get_config
 from .rate_limiter import RateLimiter
+from .discord_compat import (
+    DISCORD_LIB,
+    HAS_INTENTS,
+    create_bot,
+    check_token_compatibility,
+)
 
 
 class DiscordClientError(Exception):
@@ -22,10 +33,18 @@ class AuthenticationError(DiscordClientError):
 
 
 class DiscordUserClient:
-    """Discord client using user token authentication."""
+    """Discord client supporting both bot and user token authentication.
+
+    Library Support:
+    - discord.py (official): Bot tokens with Gateway Intents
+    - discord.py-self: User tokens (self-bot mode)
+
+    Bot tokens are faster for member syncing (no rate limits on Gateway).
+    User tokens are required for rich profile data (bio, connected accounts).
+    """
 
     def __init__(self):
-        """Initialize the Discord user client."""
+        """Initialize the Discord client."""
         self._config = get_config()
         self._rate_limiter = RateLimiter(
             base_delay=self._config.rate_limit_base_delay,
@@ -33,16 +52,19 @@ class DiscordUserClient:
         )
         self._bot: Optional[commands.Bot] = None
         self._ready = asyncio.Event()
+        self._is_bot_token = self._config.is_bot_token
 
     async def _ensure_connected(self) -> commands.Bot:
         """Ensure client is connected and return the bot instance."""
         if self._bot is not None and self._bot.is_ready():
             return self._bot
 
-        # Create new bot instance for user token (discord.py-self)
-        self._bot = commands.Bot(
+        # Create bot using compatibility layer
+        # This handles the differences between discord.py and discord.py-self
+        self._bot = create_bot(
+            is_bot_token=self._is_bot_token,
             command_prefix="!",
-            self_bot=True
+            intents_members=True  # Request GUILD_MEMBERS intent if using official discord.py
         )
 
         @self._bot.event

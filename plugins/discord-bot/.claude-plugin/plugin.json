@@ -1,0 +1,19 @@
+{
+  "name": "discord-bot",
+  "version": "1.4.0-rc2",
+  "description": "Discord bot token plugin for fast member syncing via HTTP API. Works with discord.py-self installed. Requires a bot token with SERVER MEMBERS INTENT enabled.",
+  "author": {
+    "name": "lycfyi",
+    "url": "https://github.com/lycfyi"
+  },
+  "homepage": "https://github.com/lycfyi/community-agent-plugin",
+  "repository": "https://github.com/lycfyi/community-agent-plugin",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "discord",
+    "bot",
+    "members",
+    "gateway",
+    "intents"
+  ]
+}

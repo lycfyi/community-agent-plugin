@@ -3,6 +3,10 @@ Gateway WebSocket client for fetching complete member lists.
 
 Uses Discord Gateway API's REQUEST_GUILD_MEMBERS operation for
 efficient retrieval of large member lists (100k+ members).
+
+Supports both discord.py (official) and discord.py-self libraries:
+- discord.py: For bot tokens with Gateway Intents
+- discord.py-self: For user tokens (self-bot)
 """
 
 import asyncio
@@ -14,6 +18,13 @@ from discord.ext import commands
 
 from .config import get_config
 from .member_models import MemberBasic
+from .discord_compat import (
+    DISCORD_LIB,
+    HAS_INTENTS,
+    create_bot,
+    check_token_compatibility,
+    get_library_info,
+)
 
 
 class GatewayClientError(Exception):
@@ -26,7 +37,10 @@ class GatewayMemberFetcher:
     Fetches complete member lists via Discord Gateway.
 
     Uses chunked member fetching for efficient retrieval of large servers.
-    Supports both Bot Token and User Token authentication.
+
+    Library Support:
+    - discord.py (official): Bot tokens with GUILD_MEMBERS intent
+    - discord.py-self: User tokens (self-bot mode)
     """
 
     def __init__(self):
@@ -38,21 +52,27 @@ class GatewayMemberFetcher:
         self._chunk_complete = asyncio.Event()
         self._chunks_received = 0
         self._total_chunks = 0
+        self._is_bot_token = self._config.is_bot_token
+
+        # Check token compatibility with installed library
+        is_compatible, message = check_token_compatibility(
+            is_bot_token=self._is_bot_token,
+            require_members=True
+        )
+        if not is_compatible:
+            raise GatewayClientError(message)
 
     async def _ensure_connected(self) -> commands.Bot:
         """Ensure client is connected and return the bot instance."""
         if self._bot is not None and self._bot.is_ready():
             return self._bot
 
-        # Create new bot instance for user token (discord.py-self)
-        intents = discord.Intents.default()
-        intents.members = True  # Required for member fetching
-        intents.presences = False
-
-        self._bot = commands.Bot(
+        # Create bot using compatibility layer
+        # This handles the differences between discord.py and discord.py-self
+        self._bot = create_bot(
+            is_bot_token=self._is_bot_token,
             command_prefix="!",
-            self_bot=True,
-            intents=intents
+            intents_members=True  # Request GUILD_MEMBERS intent if using official discord.py
         )
 
         @self._bot.event
@@ -264,7 +284,7 @@ class RichProfileFetcher:
     Fetches rich profile data using User Token REST API.
 
     Rich profile includes: bio, pronouns, connected accounts, badges.
-    This data is only available via User Token (selfbot).
+    This data is only available via User Token (selfbot) with discord.py-self.
     """
 
     def __init__(self):
@@ -273,14 +293,22 @@ class RichProfileFetcher:
         self._bot: Optional[commands.Bot] = None
         self._ready = asyncio.Event()
 
+        # Rich profiles require user token and discord.py-self
+        if HAS_INTENTS and not hasattr(commands.Bot, 'self_bot'):
+            raise GatewayClientError(
+                "Rich profile fetching requires discord.py-self (user token). "
+                "Install it with: pip install discord.py-self"
+            )
+
     async def _ensure_connected(self) -> commands.Bot:
         """Ensure client is connected."""
         if self._bot is not None and self._bot.is_ready():
             return self._bot
 
-        self._bot = commands.Bot(
+        # Rich profiles always require user token with discord.py-self
+        self._bot = create_bot(
+            is_bot_token=False,  # Always use user token mode for rich profiles
             command_prefix="!",
-            self_bot=True
         )
 
         @self._bot.event
