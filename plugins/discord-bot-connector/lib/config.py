@@ -87,14 +87,27 @@ class BotConfig:
         return Path(configured)
 
     @property
-    def bot_data_dir(self) -> Path:
-        """Get discord-bot specific data directory."""
-        return self.data_dir / "discord-bot"
+    def servers_dir(self) -> Path:
+        """Get unified servers data directory (shared with user-connector)."""
+        return self.data_dir / "discord" / "servers"
 
     def get_server_data_dir(self, server_id: str, server_name: str = "server") -> Path:
-        """Get data directory for a specific server."""
+        """Get data directory for a specific server.
+
+        Uses unified path format: data/discord/servers/{server_id}-{slug}
+        This matches the user-connector path format so both connectors
+        write to the same server directory.
+        """
+        # Try to find existing directory first (may already have slug)
+        servers_dir = self.servers_dir
+        if servers_dir.exists():
+            for existing in servers_dir.glob(f"{server_id}*"):
+                if existing.is_dir():
+                    return existing
+
+        # Build new directory name with slug
         slug = self._slugify(server_name)
-        return self.bot_data_dir / f"{server_id}_{slug}"
+        return servers_dir / f"{server_id}-{slug}"
 
     def _slugify(self, text: str) -> str:
         """Convert text to filesystem-safe slug."""

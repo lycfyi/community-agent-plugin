@@ -49,12 +49,21 @@ your-project/                       # Current working directory
 ├── config/
 │   └── agents.yaml                # Configuration
 └── data/
-    └── discord-bot/
-        └── {server_id}_{slug}/
-            └── members/
-                ├── current.yaml       # Latest member list
-                └── snapshots/         # Historical snapshots
+    └── discord/
+        └── servers/                    # UNIFIED with user-connector
+            └── {server_id}-{slug}/
+                ├── server.yaml         # Server metadata
+                ├── sync_state.yaml     # Channel sync tracking
+                ├── {channel_name}/     # Messages (user or bot token)
+                │   ├── channel.yaml
+                │   └── messages.md
+                └── members/            # Members (bot token)
+                    ├── current.yaml
+                    ├── sync_history.yaml
+                    └── snapshots/
 ```
+
+**Note:** Both connectors now write to the same unified location, allowing combined data from both tokens.
 
 ## Prerequisites
 
@@ -96,11 +105,11 @@ DISCORD_BOT_TOKEN=your_bot_token_here
 
 All paths are relative to cwd (current working directory):
 
-**Member Data:**
+**Member Data (unified with user-connector):**
 ```
-data/discord-bot/{server_id}_{slug}/members/current.yaml
-data/discord-bot/{server_id}_{slug}/members/snapshots/
-data/discord-bot/{server_id}_{slug}/members/sync_history.yaml
+data/discord/servers/{server_id}-{slug}/members/current.yaml
+data/discord/servers/{server_id}-{slug}/members/snapshots/
+data/discord/servers/{server_id}-{slug}/members/sync_history.yaml
 ```
 
 ## Workflow
@@ -108,7 +117,7 @@ data/discord-bot/{server_id}_{slug}/members/sync_history.yaml
 1. Set up bot token in `.env`
 2. Ensure bot is in the target server with proper intents
 3. Run member sync skill
-4. Member data saved to `data/discord-bot/`
+4. Member data saved to unified location `data/discord/servers/{server_id}-{slug}/members/`
 
 ## Comparison with discord-user-connector
 

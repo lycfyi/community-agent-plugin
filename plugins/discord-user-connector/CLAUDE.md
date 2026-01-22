@@ -107,15 +107,18 @@ data/discord/dms/{user_id}-{username}/user.yaml
 data/discord/dms/{user_id}-{username}/sync_state.yaml
 ```
 
-### Migration Note
+### Unified Storage
 
-Legacy data is automatically migrated to the unified structure on first sync:
+Both `discord-user-connector` and `discord-bot-connector` now write to the same unified location:
+```
+data/discord/servers/{server_id}-{slug}/
+```
 
-**Legacy locations migrated:**
-- User connector: `data/discord/servers/{server_id}-{slug}/` → `data/discord/{server_id}/messages/`
-- Bot connector: `data/discord-bot/{server_id}_{slug}/members/` → `data/discord/{server_id}/members/`
+This allows combining data from both tokens:
+- User token: Messages, DMs, rich profiles
+- Bot token: Complete member lists (100k+ members)
 
-Migration creates breadcrumb files (`.migrated_to`) in legacy locations and a marker file (`.migration.yaml`) in the unified location.
+**Legacy data migration:** If you have old data at `data/discord-bot/{server_id}_{slug}/`, it will need to be manually moved to the unified location.
 
 ## Message Format
 
@@ -175,8 +178,8 @@ Reports include:
 
 User must have:
 - Python 3.11+ installed
-- `discord.py-self` library installed
-- `.env` with `DISCORD_USER_TOKEN` set
+- `discord.py-self` and `aiohttp` libraries installed
+- `.env` with at least one Discord token set
 
 ## Library Setup
 
@@ -186,33 +189,14 @@ This plugin uses `discord.py-self` for user token authentication:
 pip install discord.py-self>=2.0.0
 ```
 
-**For bot token support** (fast member syncing with Gateway Intents), use the `discord-bot-connector` plugin instead.
-
 ## Token Configuration
 
 ### .env Configuration
 
 ```bash
-# User token (required for this plugin)
+# User token (required)
 DISCORD_USER_TOKEN=your_user_token_here
-
-# Bot token (optional - for faster sync with higher rate limits)
-DISCORD_BOT_TOKEN=your_bot_token_here
 ```
-
-### Token Selection Behavior
-
-When both tokens are configured, operations automatically use the optimal token:
-
-| Operation | Preferred | Fallback | Reason |
-|-----------|-----------|----------|--------|
-| Message Sync | Bot | User | Higher rate limits, official API compliance |
-| Member Sync | Bot | User | Complete member list via Gateway Intents |
-| Message Send | User | - | Must send as user |
-| DM Access | User | - | DMs only accessible via user token |
-| Rich Profiles | User | - | Bio, pronouns only via user token |
-
-If only user token is configured, all operations use the user token.
 
 Get your user token from: https://discordhunt.com/articles/how-to-get-discord-user-token
 
@@ -222,9 +206,6 @@ Using a user token may violate Discord's Terms of Service. This is for personal 
 
 ## Bot Token Alternative
 
-For server administrators who need:
-- Fast member syncing (100k+ members via Gateway Intents)
-- Official API compliance
-- No ToS concerns
+For faster server message sync with higher rate limits, use `discord-bot-connector:discord-sync` instead.
 
-Use the `discord-bot-connector` plugin instead, which uses `discord.py` with bot tokens.
+For fast member syncing (100k+ members via Gateway Intents), use `discord-bot-connector:discord-bot-members`.

@@ -48,12 +48,12 @@ python {{PLUGIN_DIR}}/tools/member_sync.py --server SERVER_ID --include-bots
 
 ## Output Location
 
-All paths are relative to cwd (current working directory):
+All paths are relative to cwd (current working directory). Uses unified path shared with user-connector:
 
 ```
-data/discord-bot/{server_id}_{slug}/members/current.yaml
-data/discord-bot/{server_id}_{slug}/members/snapshots/
-data/discord-bot/{server_id}_{slug}/members/sync_history.yaml
+data/discord/servers/{server_id}-{slug}/members/current.yaml
+data/discord/servers/{server_id}-{slug}/members/snapshots/
+data/discord/servers/{server_id}-{slug}/members/sync_history.yaml
 ```
 
 ## Example Output
@@ -68,7 +68,7 @@ Syncing... [========================================] 50000/50000 (100.0%)
 Sync complete in 75.4 seconds
 - Total members: 50,000 (49,500 humans, 500 bots)
 
-Data saved to: data/discord-bot/1234567890_my-server/members/
+Data saved to: data/discord/servers/1234567890-my-server/members/
 ```
 
 ## Troubleshooting
