@@ -1,6 +1,6 @@
 {
   "name": "telegram-connector",
-  "version": "1.4.0-rc5",
+  "version": "1.5.1",
   "description": "Sync, read, and analyze Telegram messages with Claude Code. Includes skills for message syncing, group browsing, and chat analysis.",
   "author": {
     "name": "lycfyi",

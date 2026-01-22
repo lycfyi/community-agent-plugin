@@ -1,6 +1,6 @@
 {
   "name": "community-agent",
-  "version": "1.5.0-rc1",
+  "version": "1.5.1",
   "description": "Community management orchestrator with cross-platform coordination. Includes the community-manager agent that coordinates Discord and Telegram skills, plus shared utilities for all platform connectors.",
   "author": {
     "name": "lycfyi",
@@ -9,5 +9,12 @@
   "homepage": "https://github.com/lycfyi/community-agent-plugin",
   "repository": "https://github.com/lycfyi/community-agent-plugin",
   "license": "AGPL-3.0",
-  "keywords": ["community", "agent", "orchestrator", "discord", "telegram", "management"]
+  "keywords": [
+    "community",
+    "agent",
+    "orchestrator",
+    "discord",
+    "telegram",
+    "management"
+  ]
 }
