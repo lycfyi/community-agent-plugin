@@ -1,20 +1,23 @@
 ---
 name: discord-sync
-description: "Sync Discord messages to local storage. Use when user asks to sync, pull, fetch, or download Discord messages."
+description: "Sync Discord messages using USER TOKEN. Supports servers AND DMs. Use when routed here by community-agent:discord-sync or user explicitly requests user token sync."
 ---
 
-# Discord Sync
+# Discord User Token Sync
 
-Syncs messages from Discord servers to local Markdown files for reading and analysis.
+Syncs messages from Discord servers AND DMs using user token authentication.
 
 ## When to Use
 
-- User asks to "sync Discord messages"
-- User asks to "pull messages from Discord"
-- User wants to "get Discord history"
-- User wants to "update Discord data"
-- User wants to "download Discord messages"
-- User asks to "fetch messages from #channel"
+- Routed here by `community-agent:discord-sync` preflight check
+- User explicitly asks for "user token sync"
+- User wants to sync DMs (bots cannot access DMs)
+- User wants rich profile data (bio, pronouns)
+
+## When NOT to Use
+
+- User just says "sync discord" - use `community-agent:discord-sync` instead (it will route here if appropriate)
+- User wants faster sync with bot token - use `discord-bot-connector:discord-sync`
 
 ## Smart Defaults (Reduce Questions)
 
@@ -112,25 +115,14 @@ DM messages saved to: `./dms/discord/{user_id}-{username}/messages.md`
 
 DM manifest: `./dms/discord/manifest.yaml`
 
-## Token Selection
-
-When both `DISCORD_USER_TOKEN` and `DISCORD_BOT_TOKEN` are configured, the sync automatically:
-- **Prefers bot token** for message sync (higher rate limits, official API compliance)
-- **Falls back to user token** if bot token is unavailable
-
-For optimal performance, configure both tokens in `.env`:
-```bash
-DISCORD_USER_TOKEN=your_user_token
-DISCORD_BOT_TOKEN=your_bot_token
-```
-
-**Note:** Bot token requires SERVER MEMBERS INTENT enabled in Discord Developer Portal.
-
 ## Prerequisites
 
 - `./.env` file with `DISCORD_USER_TOKEN` set (in cwd)
 - `./config/agents.yaml` with `discord.default_server_id` configured (unless using --server flag)
-- Optional: `DISCORD_BOT_TOKEN` for faster sync with higher rate limits
+
+## Bot Token Alternative
+
+For faster server message sync with higher rate limits (no DM access), use `discord-bot-connector:discord-sync` instead.
 
 ## Incremental Sync
 

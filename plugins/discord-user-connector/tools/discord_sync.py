@@ -9,6 +9,10 @@ Usage:
     python tools/discord_sync.py --since 2024-01-01   # Sync from specific date
     python tools/discord_sync.py --server SERVER_ID
     python tools/discord_sync.py --channel CHANNEL_ID --days 7
+
+Note:
+    This tool uses the user token (DISCORD_USER_TOKEN) for all operations.
+    For bot token sync with higher rate limits, use discord-bot-connector:discord-sync.
 """
 
 import argparse
@@ -31,7 +35,7 @@ from lib.discord_client import (
 )
 from lib.storage import get_storage, SyncMode, DM_DEFAULT_LIMIT
 from lib.parallel_sync import ParallelSyncOrchestrator, SyncSummary
-from lib.rate_limiter import format_duration, estimate_sync_time
+from lib.rate_limiter import format_duration
 
 
 async def sync_channel(
@@ -368,8 +372,8 @@ async def sync_all_servers(
         use_parallel: If True, use parallel channel syncing.
     """
     config = get_config()
-    client = DiscordUserClient()
     storage = get_storage()
+    client = DiscordUserClient()
 
     try:
         print("Fetching your Discord servers...")
@@ -496,21 +500,43 @@ async def sync_server(
         use_parallel: If True, use parallel channel syncing.
     """
     config = get_config()
-    client = DiscordUserClient()
     storage = get_storage()
+    client = DiscordUserClient()
 
     try:
-        # Get server info
+        # Get server info - support both ID and name lookup
         guilds = await client.list_guilds()
+
+        # First try exact ID match
         server_info = next(
             (g for g in guilds if g["id"] == server_id),
             None
         )
 
+        # If not found by ID, try name match (case-insensitive, partial)
         if not server_info:
-            print(f"Error: Server {server_id} not found or not accessible")
+            search_term = server_id.lower()
+            matches = [
+                g for g in guilds
+                if search_term in g["name"].lower()
+            ]
+            if len(matches) == 1:
+                server_info = matches[0]
+                print(f"Matched server by name: {server_info['name']}")
+            elif len(matches) > 1:
+                print(f"Error: Multiple servers match '{server_id}':")
+                for m in matches:
+                    print(f"  - {m['name']} (ID: {m['id']})")
+                print("Please specify the server ID instead.")
+                sys.exit(1)
+
+        if not server_info:
+            print(f"Error: Server '{server_id}' not found or not accessible")
+            print("Use 'discord-list --servers' to see available servers.")
             sys.exit(1)
 
+        # Use resolved server ID and name
+        server_id = server_info["id"]
         server_name = server_info["name"]
         print(f"Syncing from: {server_name} ({server_id})")
 
@@ -811,7 +837,7 @@ async def sync_dms_standalone(
 
     try:
         print(f"\n{'='*50}")
-        print("Syncing DMs...")
+        print("Syncing DMs (using user token)...")
 
         total_messages, dm_count = await sync_all_dms(
             client=client,
