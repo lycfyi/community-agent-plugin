@@ -36,7 +36,7 @@ Then select the plugin(s) you want to install from the marketplace.
 
 - Claude Code CLI
 - Python 3.11+
-- Discord account (for discord-connector)
+- Discord account (for discord-user-connector)
 - Telegram account (for telegram-connector)
 
 ## Demo
@@ -62,7 +62,7 @@ Then select the plugin(s) you want to install from the marketplace.
         │                                    │
         ▼                                    ▼
 ┌───────────────────┐              ┌───────────────────┐
-│ discord-connector │              │telegram-connector │
+│ discord-user-connector │              │telegram-connector │
 │    (HANDS)        │              │    (HANDS)        │
 │                   │              │                   │
 │ Platform-specific │              │ Platform-specific │
@@ -75,7 +75,7 @@ Then select the plugin(s) you want to install from the marketplace.
 | Plugin | Description |
 |--------|-------------|
 | `community-agent` | Orchestrating agent + shared library. Coordinates cross-platform workflows. |
-| `discord-connector` | Skills for syncing, reading, and analyzing Discord messages |
+| `discord-user-connector` | Skills for syncing, reading, and analyzing Discord messages |
 | `telegram-connector` | Skills for syncing, reading, and analyzing Telegram messages |
 
 ---
@@ -95,7 +95,7 @@ The brain of the system. Provides:
 
 ---
 
-## discord-connector
+## discord-user-connector
 
 Sync, read, and analyze Discord messages directly from Claude Code.
 
@@ -214,7 +214,7 @@ plugins/
 │   │   └── community-patterns/     # Domain knowledge
 │   └── lib/                        # Shared utilities
 │
-├── discord-connector/       # HANDS (Discord)
+├── discord-user-connector/       # HANDS (Discord)
 │   ├── skills/              # Platform skills
 │   ├── tools/               # Python implementations
 │   └── lib/

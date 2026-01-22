@@ -4,12 +4,12 @@ Plugin guidance for Claude Code when working with Discord bot token operations.
 
 ## IMPORTANT: How to Use This Plugin
 
-**ALWAYS use the Skill tool to invoke Discord bot operations.** Do NOT try to run `discord-bot` as a bash command.
+**ALWAYS use the Skill tool to invoke Discord bot operations.** Do NOT try to run `discord-bot-connector` as a bash command.
 
 When user asks about member syncing with bot tokens, invoke the appropriate skill:
 
 ```
-Skill(skill: "discord-bot:discord-bot-members")    # Sync members with bot token
+Skill(skill: "discord-bot-connector:discord-bot-members")    # Sync members with bot token
 ```
 
 The skill will load instructions showing which Python scripts to run.
@@ -20,7 +20,7 @@ This plugin provides **fast member syncing** for Discord servers using bot token
 
 **Works alongside discord.py-self** - Uses aiohttp for direct API calls, no library namespace conflicts.
 
-**For user token features** (rich profiles, message sync), use the `discord-connector` plugin instead.
+**For user token features** (rich profiles, message sync), use the `discord-user-connector` plugin instead.
 
 ## Available Skills
 
@@ -30,13 +30,13 @@ This plugin provides **fast member syncing** for Discord servers using bot token
 
 ## When to Use This Plugin
 
-Use `discord-bot` when you need:
+Use `discord-bot-connector` when you need:
 - Fast member syncing (100k+ members)
 - Complete member lists (not just cached members)
 - Official API compliance
 - Server administration features
 
-Use `discord-connector` when you need:
+Use `discord-user-connector` when you need:
 - Rich profile data (bio, pronouns, connected accounts)
 - Message syncing and reading
 - User token features
@@ -110,9 +110,9 @@ data/discord-bot/{server_id}_{slug}/members/sync_history.yaml
 3. Run member sync skill
 4. Member data saved to `data/discord-bot/`
 
-## Comparison with discord-connector
+## Comparison with discord-user-connector
 
-| Feature | discord-bot | discord-connector |
+| Feature | discord-bot | discord-user-connector |
 |---------|-------------|-------------------|
 | Library | aiohttp (HTTP API) | discord.py-self |
 | Token | Bot Token | User Token |

@@ -33,12 +33,12 @@ from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 
-# Add discord-connector path for MessageParser
+# Add discord-user-connector path for MessageParser
 sys.path.insert(
     0,
     str(
         Path(__file__).parent.parent.parent
-        / "discord-connector"
+        / "discord-user-connector"
         / "lib"
         / "analytics"
     ),
@@ -50,7 +50,7 @@ except ImportError:
     # Fallback for when running from different contexts
     discord_analytics_path = (
         Path(__file__).parent.parent.parent
-        / "discord-connector"
+        / "discord-user-connector"
         / "lib"
         / "analytics"
     )
@@ -59,8 +59,8 @@ except ImportError:
         from parser import MessageParser, ParsedMessage
     else:
         raise ImportError(
-            "Could not import MessageParser from discord-connector. "
-            "Ensure discord-connector plugin is installed."
+            "Could not import MessageParser from discord-user-connector. "
+            "Ensure discord-user-connector plugin is installed."
         )
 
 from .member_profile import ProfileStore, create_profile

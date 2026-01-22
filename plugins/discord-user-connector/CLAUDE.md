@@ -9,11 +9,11 @@ Plugin guidance for Claude Code when working with Discord community data.
 When user asks about Discord (sync, list, read, send, analyze), invoke the appropriate skill:
 
 ```
-Skill(skill: "discord-connector:discord-list")    # List servers/channels
-Skill(skill: "discord-connector:discord-sync")    # Sync messages
-Skill(skill: "discord-connector:discord-read")    # Read synced messages
-Skill(skill: "discord-connector:discord-send")    # Send messages
-Skill(skill: "discord-connector:discord-analyze") # Analyze community health
+Skill(skill: "discord-user-connector:discord-list")    # List servers/channels
+Skill(skill: "discord-user-connector:discord-sync")    # Sync messages
+Skill(skill: "discord-user-connector:discord-read")    # Read synced messages
+Skill(skill: "discord-user-connector:discord-send")    # Send messages
+Skill(skill: "discord-user-connector:discord-analyze") # Analyze community health
 ```
 
 The skill will load instructions showing which Python scripts to run.
@@ -109,7 +109,13 @@ data/discord/dms/{user_id}-{username}/sync_state.yaml
 
 ### Migration Note
 
-Legacy data (from v1 structure in `data/{server_id}/` and `dms/discord/`) is automatically migrated to the unified structure on first sync.
+Legacy data is automatically migrated to the unified structure on first sync:
+
+**Legacy locations migrated:**
+- User connector: `data/discord/servers/{server_id}-{slug}/` → `data/discord/{server_id}/messages/`
+- Bot connector: `data/discord-bot/{server_id}_{slug}/members/` → `data/discord/{server_id}/members/`
+
+Migration creates breadcrumb files (`.migrated_to`) in legacy locations and a marker file (`.migration.yaml`) in the unified location.
 
 ## Message Format
 
@@ -180,7 +186,7 @@ This plugin uses `discord.py-self` for user token authentication:
 pip install discord.py-self>=2.0.0
 ```
 
-**For bot token support** (fast member syncing with Gateway Intents), use the `discord-bot` plugin instead.
+**For bot token support** (fast member syncing with Gateway Intents), use the `discord-bot-connector` plugin instead.
 
 ## Token Configuration
 
@@ -189,7 +195,24 @@ pip install discord.py-self>=2.0.0
 ```bash
 # User token (required for this plugin)
 DISCORD_USER_TOKEN=your_user_token_here
+
+# Bot token (optional - for faster sync with higher rate limits)
+DISCORD_BOT_TOKEN=your_bot_token_here
 ```
+
+### Token Selection Behavior
+
+When both tokens are configured, operations automatically use the optimal token:
+
+| Operation | Preferred | Fallback | Reason |
+|-----------|-----------|----------|--------|
+| Message Sync | Bot | User | Higher rate limits, official API compliance |
+| Member Sync | Bot | User | Complete member list via Gateway Intents |
+| Message Send | User | - | Must send as user |
+| DM Access | User | - | DMs only accessible via user token |
+| Rich Profiles | User | - | Bio, pronouns only via user token |
+
+If only user token is configured, all operations use the user token.
 
 Get your user token from: https://discordhunt.com/articles/how-to-get-discord-user-token
 
@@ -204,4 +227,4 @@ For server administrators who need:
 - Official API compliance
 - No ToS concerns
 
-Use the `discord-bot` plugin instead, which uses `discord.py` with bot tokens.
+Use the `discord-bot-connector` plugin instead, which uses `discord.py` with bot tokens.

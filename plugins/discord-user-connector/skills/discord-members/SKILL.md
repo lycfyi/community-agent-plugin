@@ -1,6 +1,6 @@
 ---
 name: discord-members
-description: "Query existing member data, track churned members, fetch rich profiles (bio, pronouns). NOT for syncing - use discord-bot:discord-bot-members to sync members."
+description: "Query existing member data, track churned members, fetch rich profiles (bio, pronouns). NOT for syncing - use discord-bot-connector:discord-bot-members to sync members."
 ---
 
 # Discord Members
@@ -11,9 +11,9 @@ Member queries, churn tracking, profile management, and exports.
 
 **DO NOT use this skill for syncing members.** User tokens can only see 2-10 cached members.
 
-**For member syncing, ALWAYS use the `discord-bot` plugin:**
+**For member syncing, ALWAYS use the `discord-bot-connector` plugin:**
 ```
-Skill(skill: "discord-bot:discord-bot-members")
+Skill(skill: "discord-bot-connector:discord-bot-members")
 ```
 
 If the user asks to "sync members", invoke the discord-bot skill, NOT this one.
@@ -29,7 +29,7 @@ Use this skill ONLY for:
 
 ## When to Use discord-bot Skill Instead
 
-Use `discord-bot:discord-bot-members` when:
+Use `discord-bot-connector:discord-bot-members` when:
 - User asks to "sync members"
 - User asks for "member list" or "get all members"
 - User asks "how many members"
@@ -102,4 +102,4 @@ reports/discord/exports/members_{timestamp}.csv
 
 - `.env` with `DISCORD_USER_TOKEN` set
 - Python 3.11+ installed
-- **For syncing members: Use `discord-bot` plugin with `DISCORD_BOT_TOKEN`**
+- **For syncing members: Use `discord-bot-connector` plugin with `DISCORD_BOT_TOKEN`**

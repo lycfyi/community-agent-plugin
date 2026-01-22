@@ -16,6 +16,7 @@ dist/
 build/
 .venv/
 venv/
+.ruff_cache/
 
 # OS
 .DS_Store

@@ -112,10 +112,25 @@ DM messages saved to: `./dms/discord/{user_id}-{username}/messages.md`
 
 DM manifest: `./dms/discord/manifest.yaml`
 
+## Token Selection
+
+When both `DISCORD_USER_TOKEN` and `DISCORD_BOT_TOKEN` are configured, the sync automatically:
+- **Prefers bot token** for message sync (higher rate limits, official API compliance)
+- **Falls back to user token** if bot token is unavailable
+
+For optimal performance, configure both tokens in `.env`:
+```bash
+DISCORD_USER_TOKEN=your_user_token
+DISCORD_BOT_TOKEN=your_bot_token
+```
+
+**Note:** Bot token requires SERVER MEMBERS INTENT enabled in Discord Developer Portal.
+
 ## Prerequisites
 
 - `./.env` file with `DISCORD_USER_TOKEN` set (in cwd)
 - `./config/agents.yaml` with `discord.default_server_id` configured (unless using --server flag)
+- Optional: `DISCORD_BOT_TOKEN` for faster sync with higher rate limits
 
 ## Incremental Sync
 

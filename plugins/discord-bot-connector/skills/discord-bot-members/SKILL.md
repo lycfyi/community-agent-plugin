@@ -97,4 +97,4 @@ Data saved to: data/discord-bot/1234567890_my-server/members/
 - Handles rate limiting automatically
 - Bot token provides official API compliance
 - No ToS concerns unlike user tokens
-- For rich profiles (bio, pronouns), use `discord-connector` plugin instead
+- For rich profiles (bio, pronouns), use `discord-user-connector` plugin instead

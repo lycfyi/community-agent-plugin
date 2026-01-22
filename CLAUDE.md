@@ -17,7 +17,7 @@ Community Agent Plugin Marketplace for Claude Code.
         │                                    │
         ▼                                    ▼
 ┌───────────────────┐              ┌───────────────────┐
-│ discord-connector │              │telegram-connector │
+│ discord-user-connector │              │telegram-connector │
 │  (DATA IO ONLY)   │              │  (DATA IO ONLY)   │
 │                   │              │                   │
 │ discord-init      │              │ telegram-init     │
@@ -39,7 +39,7 @@ Community Agent Plugin Marketplace for Claude Code.
 | Plugin | Description |
 |--------|-------------|
 | `community-agent` | Orchestrating agent + shared library. Coordinates cross-platform workflows. |
-| `discord-connector` | Data IO for Discord - sync, read, send messages (no persona/profile) |
+| `discord-user-connector` | Data IO for Discord - sync, read, send messages (no persona/profile) |
 | `telegram-connector` | Data IO for Telegram - sync, read, send messages (no persona/profile) |
 
 ## Plugin Structure
@@ -56,7 +56,7 @@ plugins/
 │       ├── persona.py             # Bot personality settings
 │       └── profile.py             # User preferences & interests
 │
-├── discord-connector/       # DATA IO (Discord) - Self-contained
+├── discord-user-connector/       # DATA IO (Discord) - Self-contained
 │   ├── skills/              # Platform skills (sync, read, send, analyze)
 │   ├── tools/               # Python implementations
 │   └── lib/                 # Bundled config only (no persona/profile)

@@ -6,7 +6,7 @@ Syncs complete member list from Discord servers via Gateway API.
 Supports servers with 100k+ members.
 
 NOTE: This tool uses discord.py-self (user token). For fast member syncing
-with Gateway Intents, use the discord-bot plugin instead.
+with Gateway Intents, use the discord-bot-connector plugin instead.
 
 Usage:
     python member_sync.py --server SERVER_ID [--enrich-profiles] [--create-profiles] [--include-bots]

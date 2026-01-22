@@ -22,7 +22,7 @@ This plugin serves two purposes:
         │                                    │
         ▼                                    ▼
 ┌───────────────────┐              ┌───────────────────┐
-│ discord-connector │              │telegram-connector │
+│ discord-user-connector │              │telegram-connector │
 │    (HANDS)        │              │    (HANDS)        │
 └───────────────────┘              └───────────────────┘
 ```
@@ -244,7 +244,7 @@ community-agent/
 Platform plugins import from this library via symlink:
 
 ```python
-# In discord-connector/lib/config.py
+# In discord-user-connector/lib/config.py
 from community_agent.lib.config import (
     CommunityConfig,
     get_config,
