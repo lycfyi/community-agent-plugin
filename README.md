@@ -2,6 +2,42 @@
 
 A Claude Code plugin marketplace for community management tools. Sync and analyze Discord & Telegram messages directly from Claude Code.
 
+## What You Can Do
+
+Talk to Claude in natural language to manage your community:
+
+**Track Growth & New Members**
+```
+"How many members joined this week?"
+"Show me the growth stats for the last month"
+```
+
+**Find Silent Members & Lurkers**
+```
+"List lurkers who joined over 30 days ago but never posted"
+"Show me the engagement breakdown"
+```
+
+**Smart Member Search**
+```
+"Find members interested in AI"
+"Search for developers with moderator role"
+"Find active members who joined last month"
+```
+
+**Track Churn**
+```
+"Who left the server recently?"
+"Which departing members were actually active?"
+```
+
+**Analyze & Export**
+```
+"Which members are most active?"
+"Export member list as CSV"
+"Analyze community health"
+```
+
 ## Quick Start
 
 ### 1. Install the Plugin
@@ -59,15 +95,15 @@ Then select the plugin(s) you want to install from the marketplace.
 │  Orchestrating agent that coordinates cross-platform     │
 │  workflows using platform connectors as "hands"          │
 └─────────────────────────────────────────────────────────┘
-        │                                    │
-        ▼                                    ▼
-┌───────────────────┐              ┌───────────────────┐
-│ discord-user-connector │              │telegram-connector │
-│    (HANDS)        │              │    (HANDS)        │
-│                   │              │                   │
-│ Platform-specific │              │ Platform-specific │
-│ skills for Discord│              │ skills for Telegram│
-└───────────────────┘              └───────────────────┘
+        │                    │                    │
+        ▼                    ▼                    ▼
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│discord-user  │    │ discord-bot  │    │  telegram    │
+│ -connector   │    │ -connector   │    │ -connector   │
+│              │    │              │    │              │
+│ Messages     │    │ Fast member  │    │ Messages     │
+│ DMs, Profiles│    │ sync (100k+) │    │ Groups       │
+└──────────────┘    └──────────────┘    └──────────────┘
 ```
 
 ## Available Plugins
@@ -75,8 +111,9 @@ Then select the plugin(s) you want to install from the marketplace.
 | Plugin | Description |
 |--------|-------------|
 | `community-agent` | Orchestrating agent + shared library. Coordinates cross-platform workflows. |
-| `discord-user-connector` | Skills for syncing, reading, and analyzing Discord messages |
-| `telegram-connector` | Skills for syncing, reading, and analyzing Telegram messages |
+| `discord-user-connector` | Sync messages, read DMs, get rich profiles (user token) |
+| `discord-bot-connector` | Fast member sync for large servers - 100k+ members (bot token) |
+| `telegram-connector` | Sync, read, and analyze Telegram messages |
 
 ---
 
@@ -106,6 +143,7 @@ Sync, read, and analyze Discord messages directly from Claude Code.
 | `discord-sync`         | Sync messages to local Markdown storage            |
 | `discord-read`         | Read and search synced messages                    |
 | `discord-send`         | Send messages to Discord channels                  |
+| `discord-members`      | Query members, track churn, get rich profiles      |
 | `discord-chat-summary` | AI-powered summary of Discord conversations        |
 | `discord-analyze`      | Generate community health reports with metrics     |
 | `discord-doctor`       | Diagnose configuration issues                      |
@@ -125,6 +163,32 @@ Sync, read, and analyze Discord messages directly from Claude Code.
 [How to get your Discord user token (guide)](https://discordhunt.com/articles/how-to-get-discord-user-token)
 
 > **Warning:** Using a user token may violate Discord's Terms of Service. This tool is intended for personal archival and analysis only. Use at your own risk.
+
+---
+
+## discord-bot-connector
+
+Fast member syncing for large Discord servers using bot tokens. Can fetch complete member lists from servers with 100k+ members.
+
+| Skill                  | Purpose                                            |
+| ---------------------- | -------------------------------------------------- |
+| `discord-bot-members`  | Sync complete member list via Gateway API          |
+| `discord-sync`         | Sync messages (shares data with user-connector)    |
+
+**When to use bot-connector vs user-connector:**
+
+| Feature | Bot Connector | User Connector |
+|---------|---------------|----------------|
+| Member Sync | Fast, complete list | Cached only |
+| Message Sync | Yes | Yes |
+| DM Access | No | Yes |
+| Rich Profiles (bio, pronouns) | No | Yes |
+| ToS Compliant | Yes | Gray area |
+
+**Setup:** Create a bot at [Discord Developer Portal](https://discord.com/developers/applications), enable SERVER MEMBERS INTENT, and add to `.env`:
+```
+DISCORD_BOT_TOKEN=your_bot_token
+```
 
 ---
 
@@ -214,14 +278,19 @@ plugins/
 │   │   └── community-patterns/     # Domain knowledge
 │   └── lib/                        # Shared utilities
 │
-├── discord-user-connector/       # HANDS (Discord)
-│   ├── skills/              # Platform skills
-│   ├── tools/               # Python implementations
+├── discord-user-connector/  # HANDS (Discord user token)
+│   ├── skills/              # Messages, DMs, profiles
+│   ├── tools/
+│   └── lib/
+│
+├── discord-bot-connector/   # HANDS (Discord bot token)
+│   ├── skills/              # Fast member sync
+│   ├── tools/
 │   └── lib/
 │
 └── telegram-connector/      # HANDS (Telegram)
-    ├── skills/              # Platform skills
-    ├── tools/               # Python implementations
+    ├── skills/
+    ├── tools/
     └── lib/
 ```
 
