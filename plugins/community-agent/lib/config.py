@@ -209,7 +209,15 @@ class CommunityConfig:
         return not meta.get("setup_complete", False)
 
     def has_discord_token(self) -> bool:
-        """Check if Discord token is set (without throwing)."""
+        """Check if any Discord token is set (without throwing)."""
+        return bool(os.getenv("DISCORD_BOT_TOKEN") or os.getenv("DISCORD_USER_TOKEN"))
+
+    def has_discord_bot_token(self) -> bool:
+        """Check if Discord bot token is set."""
+        return bool(os.getenv("DISCORD_BOT_TOKEN"))
+
+    def has_discord_user_token(self) -> bool:
+        """Check if Discord user token is set."""
         return bool(os.getenv("DISCORD_USER_TOKEN"))
 
     def has_telegram_credentials(self) -> bool:
@@ -326,16 +334,80 @@ class CommunityConfig:
     # Discord properties
     # -------------------------------------------------------------------------
 
+    def _detect_discord_library(self) -> tuple[bool, str]:
+        """Detect which Discord library is installed.
+
+        Returns:
+            Tuple of (has_intents, library_name)
+        """
+        try:
+            import discord
+            # Official discord.py has Intents
+            _ = discord.Intents
+            return (True, "discord.py")
+        except (ImportError, AttributeError):
+            return (False, "discord.py-self")
+
     @property
     def discord_token(self) -> str:
-        """Get Discord user token from environment."""
-        token = os.getenv("DISCORD_USER_TOKEN")
-        if not token:
-            raise ConfigError(
-                "DISCORD_USER_TOKEN not set. "
-                "Add it to .env file or set as environment variable."
-            )
-        return token
+        """Get Discord token from environment.
+
+        Selection logic is library-aware:
+        - discord.py (official): Prefers bot token (has Intents for member fetching)
+        - discord.py-self: Prefers user token (bot tokens can't fetch members without Intents)
+        """
+        has_intents, lib_name = self._detect_discord_library()
+        bot_token = os.getenv("DISCORD_BOT_TOKEN")
+        user_token = os.getenv("DISCORD_USER_TOKEN")
+
+        if has_intents:
+            # discord.py (official) - prefer bot token for member fetching
+            if bot_token:
+                return bot_token
+            if user_token:
+                return user_token
+        else:
+            # discord.py-self - prefer user token (bot tokens can't fetch members)
+            if user_token:
+                return user_token
+            if bot_token:
+                return bot_token
+
+        raise ConfigError(
+            "No Discord token set. "
+            "Add DISCORD_BOT_TOKEN or DISCORD_USER_TOKEN to .env file."
+        )
+
+    @property
+    def discord_token_type(self) -> str:
+        """Get the type of Discord token being used.
+
+        Selection is library-aware:
+        - discord.py: Returns "bot" if bot token is set
+        - discord.py-self: Returns "user" if user token is set (preferred for this library)
+
+        Returns:
+            "bot" if using bot token, "user" if using user token
+        """
+        has_intents, _ = self._detect_discord_library()
+        bot_token = os.getenv("DISCORD_BOT_TOKEN")
+        user_token = os.getenv("DISCORD_USER_TOKEN")
+
+        if has_intents:
+            # discord.py - prefer bot token
+            if bot_token:
+                return "bot"
+            return "user"
+        else:
+            # discord.py-self - prefer user token
+            if user_token:
+                return "user"
+            return "bot"
+
+    @property
+    def is_discord_bot_token(self) -> bool:
+        """Check if the current token is a bot token."""
+        return self.discord_token_type == "bot"
 
     @property
     def discord_server_id(self) -> Optional[str]:

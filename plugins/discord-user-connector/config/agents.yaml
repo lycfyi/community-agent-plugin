@@ -1,0 +1,40 @@
+_meta:
+  created_at: '2026-01-20T22:18:56.974048'
+  last_run_at: null
+  setup_complete: false
+  setup_mode: null
+  version: null
+data_dir: ./data
+discord:
+  default_server_id: null
+  rate_limits:
+    base_delay: 1.0
+    max_delay: 60.0
+    parallel_channels: 5
+  retention_days: 30
+  sync_limits:
+    max_channels_per_server: 20
+    max_messages_per_channel: 1000
+    priority_channels:
+    - general
+    - announcements
+persona:
+  background: Experienced community manager who knows the ins and outs
+  communication_style: Clear and professional, uses bullet points for clarity
+  name: Alex
+  personality: Professional, organized, and helpful. Keeps discussions on track.
+  preset: community_manager
+  role: Community Manager
+  tasks:
+  - Welcome new members
+  - Answer community questions
+  - Summarize discussions
+  - Highlight important announcements
+telegram:
+  default_group_id: null
+  rate_limits:
+    min_interval_ms: 100
+  retention_days: 7
+  sync_limits:
+    max_groups: 10
+    max_messages_per_group: 2000

@@ -121,8 +121,26 @@ class Config:
         self._community_config.mark_setup_complete(mode, version)
 
     def has_discord_token(self) -> bool:
-        """Check if Discord token is set (without throwing)."""
+        """Check if any Discord token is set (without throwing)."""
         return self._community_config.has_discord_token()
+
+    def has_discord_bot_token(self) -> bool:
+        """Check if Discord bot token is set."""
+        return self._community_config.has_discord_bot_token()
+
+    def has_discord_user_token(self) -> bool:
+        """Check if Discord user token is set."""
+        return self._community_config.has_discord_user_token()
+
+    @property
+    def discord_token_type(self) -> str:
+        """Get the type of Discord token being used ('bot' or 'user')."""
+        return self._community_config.discord_token_type
+
+    @property
+    def is_bot_token(self) -> bool:
+        """Check if the current token is a bot token."""
+        return self._community_config.is_discord_bot_token
 
 
 # Global config instance

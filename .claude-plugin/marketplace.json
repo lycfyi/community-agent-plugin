@@ -28,9 +28,9 @@
       "source": "./plugins/community-agent"
     },
     {
-      "name": "discord-connector",
-      "description": "Sync, read, and analyze Discord messages with Claude Code. Includes skills for message syncing, channel browsing, and chat summarization.",
-      "version": "1.2.0",
+      "name": "discord-user-connector",
+      "description": "Sync, read, and analyze Discord messages using user token authentication. Includes skills for message syncing, channel browsing, and chat summarization.",
+      "version": "1.5.0",
       "author": {
         "name": "lycfyi",
         "url": "https://github.com/lycfyi"
@@ -41,9 +41,10 @@
         "community",
         "sync",
         "messages",
-        "analysis"
+        "analysis",
+        "user-token"
       ],
-      "source": "./plugins/discord-connector"
+      "source": "./plugins/discord-user-connector"
     },
     {
       "name": "telegram-connector",
@@ -62,6 +63,25 @@
         "analysis"
       ],
       "source": "./plugins/telegram-connector"
+    },
+    {
+      "name": "discord-bot-connector",
+      "description": "Fast Discord member syncing using bot token authentication. Requires SERVER MEMBERS INTENT enabled.",
+      "version": "1.5.0",
+      "author": {
+        "name": "lycfyi",
+        "url": "https://github.com/lycfyi"
+      },
+      "homepage": "https://github.com/lycfyi/community-agent-plugin",
+      "tags": [
+        "discord",
+        "bot",
+        "members",
+        "gateway",
+        "intents",
+        "bot-token"
+      ],
+      "source": "./plugins/discord-bot-connector"
     }
   ]
 }

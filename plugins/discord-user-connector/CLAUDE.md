@@ -9,11 +9,11 @@ Plugin guidance for Claude Code when working with Discord community data.
 When user asks about Discord (sync, list, read, send, analyze), invoke the appropriate skill:
 
 ```
-Skill(skill: "discord-connector:discord-list")    # List servers/channels
-Skill(skill: "discord-connector:discord-sync")    # Sync messages
-Skill(skill: "discord-connector:discord-read")    # Read synced messages
-Skill(skill: "discord-connector:discord-send")    # Send messages
-Skill(skill: "discord-connector:discord-analyze") # Analyze community health
+Skill(skill: "discord-user-connector:discord-list")    # List servers/channels
+Skill(skill: "discord-user-connector:discord-sync")    # Sync messages
+Skill(skill: "discord-user-connector:discord-read")    # Read synced messages
+Skill(skill: "discord-user-connector:discord-send")    # Send messages
+Skill(skill: "discord-user-connector:discord-analyze") # Analyze community health
 ```
 
 The skill will load instructions showing which Python scripts to run.
@@ -107,9 +107,18 @@ data/discord/dms/{user_id}-{username}/user.yaml
 data/discord/dms/{user_id}-{username}/sync_state.yaml
 ```
 
-### Migration Note
+### Unified Storage
 
-Legacy data (from v1 structure in `data/{server_id}/` and `dms/discord/`) is automatically migrated to the unified structure on first sync.
+Both `discord-user-connector` and `discord-bot-connector` now write to the same unified location:
+```
+data/discord/servers/{server_id}-{slug}/
+```
+
+This allows combining data from both tokens:
+- User token: Messages, DMs, rich profiles
+- Bot token: Complete member lists (100k+ members)
+
+**Legacy data migration:** If you have old data at `data/discord-bot/{server_id}_{slug}/`, it will need to be manually moved to the unified location.
 
 ## Message Format
 
@@ -168,9 +177,35 @@ Reports include:
 ## Prerequisites
 
 User must have:
-- `.env` with `DISCORD_USER_TOKEN` set
 - Python 3.11+ installed
+- `discord.py-self` and `aiohttp` libraries installed
+- `.env` with at least one Discord token set
+
+## Library Setup
+
+This plugin uses `discord.py-self` for user token authentication:
+
+```bash
+pip install discord.py-self>=2.0.0
+```
+
+## Token Configuration
+
+### .env Configuration
+
+```bash
+# User token (required)
+DISCORD_USER_TOKEN=your_user_token_here
+```
+
+Get your user token from: https://discordhunt.com/articles/how-to-get-discord-user-token
 
 ## Warning
 
 Using a user token may violate Discord's Terms of Service. This is for personal archival and analysis only.
+
+## Bot Token Alternative
+
+For faster server message sync with higher rate limits, use `discord-bot-connector:discord-sync` instead.
+
+For fast member syncing (100k+ members via Gateway Intents), use `discord-bot-connector:discord-bot-members`.

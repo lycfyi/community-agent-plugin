@@ -7,11 +7,11 @@ description: >
 tools: Bash, Read, Write, Glob, Grep
 model: sonnet
 skills:
-  - discord-connector:discord-sync
-  - discord-connector:discord-analyze
-  - discord-connector:discord-read
-  - discord-connector:discord-send
-  - discord-connector:discord-chat-summary
+  - discord-user-connector:discord-sync
+  - discord-user-connector:discord-analyze
+  - discord-user-connector:discord-read
+  - discord-user-connector:discord-send
+  - discord-user-connector:discord-chat-summary
   - telegram-connector:telegram-sync
   - telegram-connector:telegram-read
   - telegram-connector:telegram-send

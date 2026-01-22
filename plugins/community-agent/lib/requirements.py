@@ -244,7 +244,7 @@ class RequirementChecker:
             / "community_init.py",
             "discord-init": workspace_root
             / "plugins"
-            / "discord-connector"
+            / "discord-user-connector"
             / "tools"
             / "discord_init.py",
             "telegram-init": workspace_root

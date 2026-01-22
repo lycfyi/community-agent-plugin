@@ -1,6 +1,6 @@
 {
   "name": "community-agent",
-  "version": "1.3.0-rc2",
+  "version": "1.4.0-rc8",
   "description": "Community management orchestrator with cross-platform coordination. Includes the community-manager agent that coordinates Discord and Telegram skills, plus shared utilities for all platform connectors.",
   "author": {
     "name": "lycfyi",
