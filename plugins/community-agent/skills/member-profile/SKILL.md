@@ -1,6 +1,11 @@
+---
+name: member-profile
+description: "Manage community member profiles with persistent observations, search, and export. Use when remembering member details, looking up member context, searching for members by skill or interest, or building personalized responses from profile history."
+---
+
 # Member Profile Management
 
-Manage community member profiles to build persistent understanding of who community members are over time.
+Manage community member profiles to build persistent understanding of who community members are over time. Supports saving observations, searching by keywords, listing profiles with pagination, and exporting data.
 
 ## When to Use
 
@@ -11,6 +16,14 @@ Manage community member profiles to build persistent understanding of who commun
 - User asks for a list of community members
 - When building context for personalized responses to members
 - After gathering profile-relevant information from chat activity
+
+## Workflow
+
+1. Check if profile exists for the member (`get` command)
+2. If new member: create profile with `save` command
+3. If existing member: add observations with `add-observation` command
+4. Use `search` to find members by keywords or interests
+5. Use `list` for paginated browsing of all profiles
 
 ## Smart Defaults
 

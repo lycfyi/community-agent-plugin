@@ -1,6 +1,11 @@
+---
+name: extract-profiles
+description: "Extract member profiles from synced Discord/Telegram messages using heuristic classification. Use when building member profiles from chat history, populating profiles after syncing, or analyzing member activity patterns across community platforms."
+---
+
 # Extract Member Profiles
 
-Automatically extract member profiles from synced Discord/Telegram messages using heuristic classification.
+Automatically extract member profiles from synced Discord/Telegram messages using heuristic classification. Classifies messages into types (questions, expertise, introductions, issue reports) and generates structured observations per member.
 
 ## When to Use
 
@@ -9,6 +14,14 @@ Automatically extract member profiles from synced Discord/Telegram messages usin
 - User asks to "create profiles from chat history"
 - After syncing a server's messages for the first time
 - When user wants to understand who's active in a community
+
+## Workflow
+
+1. Verify synced messages exist for the target server (check `data/` directory)
+2. Run status check to see available data and new messages
+3. Run dry-run extraction to preview what will be generated
+4. Run actual extraction to create/update profiles
+5. Review generated profiles using `member-profile` skill
 
 ## Smart Defaults
 
