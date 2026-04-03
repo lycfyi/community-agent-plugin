@@ -1,13 +1,19 @@
 ---
 name: community-patterns
-description: >
-  Community management best practices and patterns. Automatically loaded
-  when handling community-related tasks to provide domain expertise.
+description: "Community management domain knowledge with engagement metrics, warning signs, moderation guidelines, and platform-specific best practices. Use when analyzing community health, interpreting health reports, responding to engagement issues, or advising on community growth strategies for Discord and Telegram."
 ---
 
 # Community Management Patterns
 
-Domain knowledge for effective community management across platforms.
+Domain knowledge for effective community management across Discord and Telegram platforms. Provides benchmarks, warning signs, and actionable response guidelines for maintaining healthy communities.
+
+## When to Use
+
+- When interpreting community health reports or analytics output
+- When advising on engagement strategies or growth tactics
+- When identifying warning signs in community activity data
+- When moderating or responding to community issues
+- As background context for any community management task
 
 ## Healthy Community Indicators
 
